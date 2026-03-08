@@ -10,6 +10,15 @@
 /* Prevent r_remap.h from redefining stdout/stderr in this file */
 #define R_REMAP_H
 
+/* fopencookie/cookie_io_functions_t require _GNU_SOURCE on glibc.
+   Define it before any includes so the declarations are visible,
+   even when _XOPEN_SOURCE is also set via compiler flags. */
+#if defined(__linux__) || defined(__GLIBC__)
+#  ifndef _GNU_SOURCE
+#    define _GNU_SOURCE
+#  endif
+#endif
+
 #include <R.h>
 #include <Rinternals.h>
 #include <stdio.h>
