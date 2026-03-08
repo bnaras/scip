@@ -1,32 +1,11 @@
 #!/bin/sh
 
-# Detect compiler and set appropriate flags for building SCIP/SoPlex.
-# Flags mirror what SCIP's own CMakeLists.txt / make.project use.
+# Detect compiler support for -ffp-contract=off.
+# SCIP uses this for floating-point reproducibility across systems.
 : ${CC=gcc}
-: ${CXX=g++}
-
-# -ffp-contract=off for floating-point reproducibility (GCC/clang)
 FP_FLAG=""
-if ${CC} -ffp-contract=off -x c -c /dev/null -o /dev/null 2>/dev/null; then
+if echo "int main(void){return 0;}" | ${CC} -ffp-contract=off -x c -c - -o NUL 2>/dev/null; then
   FP_FLAG="-ffp-contract=off"
 fi
 
-# Suppress warnings that SCIP's own build system suppresses.
-# Detect compiler: clang defines __clang__, GCC defines __GNUC__ without __clang__.
-SCIP_C_NOWARN=""
-SCIP_CXX_NOWARN=""
-
-if ${CC} -x c -E -dM /dev/null 2>/dev/null | grep -q '__clang__'; then
-  # clang
-  SCIP_C_NOWARN="-Wno-unknown-warning-option -Wno-initializer-overrides -Wno-unknown-pragmas -Wno-unused-parameter"
-  SCIP_CXX_NOWARN="-Wno-unknown-warning-option -Wno-unknown-pragmas -Wno-unused-parameter -Wno-strict-overflow"
-elif ${CC} -x c -E -dM /dev/null 2>/dev/null | grep -q '__GNUC__'; then
-  # GCC
-  SCIP_C_NOWARN="-Wno-override-init -Wno-uninitialized -Wno-maybe-uninitialized -Wno-unknown-pragmas -Wno-unused-parameter"
-  SCIP_CXX_NOWARN="-Wno-unknown-pragmas -Wno-unused-parameter -Wno-strict-overflow -Wno-psabi"
-fi
-
-sed -e "s|@FP_CONTRACT_FLAG@|${FP_FLAG}|g" \
-    -e "s|@SCIP_C_NOWARN@|${SCIP_C_NOWARN}|g" \
-    -e "s|@SCIP_CXX_NOWARN@|${SCIP_CXX_NOWARN}|g" \
-    src/Makevars.in > src/Makevars.win
+sed -e "s|@FP_CONTRACT_FLAG@|${FP_FLAG}|g" src/Makevars.in > src/Makevars.win
