@@ -1,0 +1,12 @@
+[submodule "src/scip"]
+	path = src/scip
+	url = https://github.com/bnaras/scip-src.git
+	branch = r_pkg
+[submodule "src/soplex"]
+	path = src/soplex
+	url = https://github.com/bnaras/soplex-src.git
+	branch = r_pkg
+[submodule "src/papilo"]
+	path = src/papilo
+	url = https://github.com/bnaras/papilo-src.git
+	branch = r_pkg

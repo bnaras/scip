@@ -1,0 +1,77 @@
+template:
+  bootstrap: 5
+  bootswatch: flatly
+
+navbar:
+  structure:
+    left:  [intro, reference, articles]
+    right: [search, github]
+  components:
+    github:
+      icon: fa-github
+      href: https://github.com/naras/scip
+
+authors:
+
+  Balasubramanian Narasimhan:
+    href: https://statistics.stanford.edu/people/balasubramanian-narasimhan
+
+  SCIP Optimization Suite Authors (CPH):
+    href: https://www.scipopt.org
+
+reference:
+  - title: Package
+    contents:
+      - scip-package
+
+  - title: One-Shot Solver
+    desc: Solve a complete problem in a single call
+    contents:
+      - scip_solve
+      - scip_control
+
+  - title: Model Construction
+    desc: Build optimization models incrementally
+    contents:
+      - scip_model
+      - scip_add_var
+      - scip_add_vars
+      - scip_set_objective_sense
+
+  - title: Constraints
+    desc: Add constraints to a model
+    contents:
+      - scip_add_linear_cons
+      - scip_add_quadratic_cons
+      - scip_add_sos1_cons
+      - scip_add_sos2_cons
+      - scip_add_indicator_cons
+
+  - title: Solve and Query
+    desc: Solve the model and retrieve results
+    contents:
+      - scip_optimize
+      - scip_get_status
+      - scip_get_solution
+      - scip_get_objval
+      - scip_get_nsols
+      - scip_get_sol
+      - scip_get_info
+
+  - title: Parameters and Cleanup
+    desc: Configure solver parameters and free resources
+    contents:
+      - scip_set_param
+      - scip_model_free
+      - print.scip_control
+      - make_csc_matrix
+
+articles:
+  - title: Getting Started
+    contents:
+      - scip-examples
+
+footer:
+  structure:
+    left: developed_by
+    right: built_with

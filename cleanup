@@ -1,0 +1,6 @@
+#!/bin/sh
+# Clean up build artifacts from submodule builds
+rm -rf src/Makevars src/Makevars.win
+# Clean any .o files from subdirectories
+find src -name "*.o" -delete 2>/dev/null
+find src -name "*.so" -delete 2>/dev/null
