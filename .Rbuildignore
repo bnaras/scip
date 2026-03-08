@@ -50,3 +50,4 @@
 ^2026-.*\.txt$
 ^00check\.log$
 ^tools/cmake_args\.sh$
+^\.github$
