@@ -8,4 +8,18 @@ if ${CC} -ffp-contract=off -x c -c /dev/null -o /dev/null 2>/dev/null; then
   FP_FLAG="-ffp-contract=off"
 fi
 
-sed -e "s|@FP_CONTRACT_FLAG@|${FP_FLAG}|g" src/Makevars.in > src/Makevars
+# Detect pthread (needed on Linux for SCIP's tinycthread;
+# macOS links pthreads implicitly).
+PTHREAD_FLAG=""
+cat > /tmp/conftest_pthread.c <<EOF
+#include <pthread.h>
+int main(void) { pthread_mutex_t m; pthread_mutex_init(&m, 0); return 0; }
+EOF
+if ${CC} -o /dev/null /tmp/conftest_pthread.c -lpthread 2>/dev/null; then
+  PTHREAD_FLAG="-lpthread"
+fi
+rm -f /tmp/conftest_pthread.c
+
+sed -e "s|@FP_CONTRACT_FLAG@|${FP_FLAG}|g" \
+    -e "s|@PTHREAD_FLAG@|${PTHREAD_FLAG}|g" \
+    src/Makevars.in > src/Makevars
