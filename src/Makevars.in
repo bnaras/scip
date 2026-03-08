@@ -2,9 +2,8 @@ CXX_STD = CXX17
 
 # Include paths: config headers first (override templates), then source trees
 # config/ has our static soplex/config.h and scip/config.h + scip/scip_export.h
-PKG_CPPFLAGS = -include config/r_remap.h \
-    -Iconfig -Isoplex/src -Iscip/src -Iscip/src/nauty \
-    -DNDEBUG -D_XOPEN_SOURCE=600 -DSCIP_STATIC_DEFINE \
+PKG_CPPFLAGS = -Iconfig -Isoplex/src -Iscip/src -Iscip/src/nauty \
+    -DNDEBUG -D_GNU_SOURCE -D_XOPEN_SOURCE=600 -DSCIP_STATIC_DEFINE \
     -DSCIP_LONGINT_FORMAT=\"lld\"
 
 # SCIP needs -ffp-contract=off for floating-point reproducibility (GCC/clang only)
@@ -471,3 +470,8 @@ R_C_OBJECTS = $(R_C_SOURCES:.c=.o)
 R_CXX_OBJECTS = $(R_CXX_SOURCES:.cpp=.o)
 
 OBJECTS = $(SOPLEX_OBJECTS) $(SCIP_C_OBJECTS) $(SCIP_CXX_OBJECTS) $(R_C_OBJECTS) $(R_CXX_OBJECTS)
+
+# Apply I/O remapping only to vendored SCIP/SoPlex sources.
+# R wrapper files (r_io.c, r_streams.cpp, scip_wrapper.c, scip_init.c)
+# include R headers directly and must not have printf/stdout/stderr remapped.
+$(SOPLEX_OBJECTS) $(SCIP_C_OBJECTS) $(SCIP_CXX_OBJECTS): CPPFLAGS += -include config/r_remap.h
