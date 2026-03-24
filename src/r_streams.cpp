@@ -7,9 +7,6 @@
  * The returned ostream& supports all << operators identically.
  */
 
-/* Prevent r_remap.h from redefining stdout/stderr/printf in this file */
-#define R_REMAP_H
-
 #include <ostream>
 #include <streambuf>
 #include <cstring>

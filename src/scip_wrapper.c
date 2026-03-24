@@ -1,8 +1,51 @@
-#define R_REMAP_H   /* Suppress r_remap.h; we include R headers directly */
 #include <R.h>
 #include <Rinternals.h>
 #include <scip/scip.h>
 #include <scip/scipdefplugins.h>
+
+/* =====================================================================
+ * SCIP message handler routed through R's I/O
+ *
+ * SCIP has a built-in message handler system for embedding. We use it
+ * to route all SCIP output through Rprintf/REprintf instead of
+ * stdout/stderr. This is the CRAN-compliant approach — no preprocessor
+ * hacks, no fake FILE* streams, no -include flags.
+ * ===================================================================== */
+
+static SCIP_DECL_MESSAGEWARNING(r_message_warning) {
+    if (msg != NULL) REprintf("%s", msg);
+}
+
+static SCIP_DECL_MESSAGEDIALOG(r_message_dialog) {
+    if (msg != NULL) Rprintf("%s", msg);
+}
+
+static SCIP_DECL_MESSAGEINFO(r_message_info) {
+    if (msg != NULL) Rprintf("%s", msg);
+}
+
+static SCIP_DECL_ERRORPRINTING(r_error_printer) {
+    if (msg != NULL) REprintf("%s", msg);
+}
+
+/* Install our message handler on a SCIP instance.
+ * Call right after SCIPcreate(), before SCIPincludeDefaultPlugins(). */
+static void install_r_message_handler(SCIP *scip) {
+    SCIP_MESSAGEHDLR *hdlr = NULL;
+
+    /* Route error messages through REprintf (global, not per-instance) */
+    SCIPmessageSetErrorPrinting(r_error_printer, NULL);
+
+    /* Create and install a message handler for info/warning/dialog */
+    SCIPmessagehdlrCreate(&hdlr, TRUE, NULL, FALSE,
+                          r_message_warning,
+                          r_message_dialog,
+                          r_message_info,
+                          NULL, NULL);
+    SCIPsetMessagehdlr(scip, hdlr);
+    /* Release our reference; SCIP now owns it */
+    SCIPmessagehdlrRelease(&hdlr);
+}
 
 /* Status string from SCIP status code */
 static const char* scip_status_string(SCIP_STATUS status) {
@@ -113,6 +156,7 @@ SEXP R_scip_model_create(SEXP s_name) {
     if (!model) error("Failed to allocate ScipModel");
 
     SCIP_CALL_R(SCIPcreate(&model->scip));
+    install_r_message_handler(model->scip);
     SCIP_CALL_R(SCIPincludeDefaultPlugins(model->scip));
     SCIP_CALL_R(SCIPcreateProbBasic(model->scip, name));
     /* Silence output by default; user can override via set_param */
@@ -601,6 +645,7 @@ SEXP R_scip_solve(SEXP obj, SEXP Ai, SEXP Ap, SEXP Ax,
 
     /* Create SCIP instance */
     SCIP_CALL_R(SCIPcreate(&scip));
+    install_r_message_handler(scip);
     SCIP_CALL_R(SCIPincludeDefaultPlugins(scip));
 
     /* Apply control parameters from the scip_control structure.

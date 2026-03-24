@@ -1,4 +1,3 @@
-#define R_REMAP_H   /* Suppress r_remap.h; we include R headers directly */
 #include <R.h>
 #include <Rinternals.h>
 #include <R_ext/Rdynload.h>
