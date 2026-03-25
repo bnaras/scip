@@ -1,15 +1,26 @@
+---
+output: github_document
+---
 
 <!-- README.md is generated from README.Rmd. Please edit that file -->
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.path = "man/figures/README-",
+  out.width = "100%"
+)
+```
 
 # SCIP <img src="man/figures/logo.png" width="120" align="right" />
 
 <!-- badges: start -->
-
 [![R-CMD-check](https://github.com/bnaras/scip/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/bnaras/scip/actions/workflows/R-CMD-check.yaml)
 <!-- badges: end -->
 
 This is an R interface to the [SCIP Optimization
-Suite](https://www.scipopt.org/). SCIP is one of the fastest
+Suite](https://www.scipopt.org/).  SCIP is one of the fastest
 non-commercial solvers for mixed integer programming (MIP) and mixed
 integer nonlinear programming (MINLP). It is also a framework for
 constraint integer programming and branch-cut-and-price. It allows for
@@ -20,22 +31,23 @@ information down to the guts of the solver.
 
 Install the released version from CRAN:
 
-``` r
+```{r, eval = FALSE}
 install.packages("scip")
 ```
 
 Or install the development version from GitHub:
 
-``` r
+```{r, eval = FALSE}
 # install.packages("pak")
 pak::pak("bnaras/scip")
 ```
 
 ## Usage
 
-Refer to the vignettes for examples. However, one of the easiest way to
-use this and many other solvers is via [`CVXR`](http://cvxr.rbind.io)
-(version 1.8.2 and higher).
+Refer to the vignettes for examples. However, one of the easiest way
+to use this and many other solvers is via
+[`CVXR`](http://cvxr.rbind.io) (version 1.8.2 and higher).
+
 
 ## License
 

@@ -4,12 +4,15 @@ template:
 
 navbar:
   structure:
-    left:  [intro, reference, articles]
+    left:  [intro, reference, examples]
     right: [search, github]
   components:
+    examples:
+      text: Examples
+      href: articles/scip-examples.html
     github:
       icon: fa-github
-      href: https://github.com/naras/scip
+      href: https://github.com/bnaras/scip
 
 authors:
 
