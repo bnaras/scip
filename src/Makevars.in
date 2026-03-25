@@ -3,7 +3,7 @@ CXX_STD = CXX17
 # Include paths: config headers first (override templates), then source trees
 # config/ has our static soplex/config.h and scip/config.h + scip/scip_export.h
 PKG_CPPFLAGS = -Iconfig -Isoplex/src -Iscip/src -Iscip/src/nauty \
-    -DNDEBUG -D_XOPEN_SOURCE=600 -DSCIP_STATIC_DEFINE \
+    -DNDEBUG -DSCIP_STATIC_DEFINE \
     -DSCIP_LONGINT_FORMAT=\"lld\"
 
 # SCIP needs -ffp-contract=off for floating-point reproducibility (GCC/clang only)
