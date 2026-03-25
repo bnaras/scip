@@ -644,9 +644,19 @@ SEXP R_scip_solve(SEXP obj, SEXP Ai, SEXP Ap, SEXP Ax,
     SCIP_CONS **conss = NULL;
 
     /* Create SCIP instance */
-    SCIP_CALL_R(SCIPcreate(&scip));
+    {
+        SCIP_RETCODE rc = SCIPcreate(&scip);
+        if (rc != SCIP_OKAY) {
+            error("SCIPcreate failed with retcode %d", rc);
+        }
+    }
     install_r_message_handler(scip);
-    SCIP_CALL_R(SCIPincludeDefaultPlugins(scip));
+    {
+        SCIP_RETCODE rc = SCIPincludeDefaultPlugins(scip);
+        if (rc != SCIP_OKAY) {
+            error("SCIPincludeDefaultPlugins failed with retcode %d", rc);
+        }
+    }
 
     /* Apply control parameters from the scip_control structure.
      * The R layer produces: list(verbose=T/F, scip_params=list(...),
