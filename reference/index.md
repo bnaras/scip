@@ -1,0 +1,66 @@
+# Package index
+
+## Package
+
+- [`scip`](scip-package.md) [`scip-package`](scip-package.md) : scip: R
+  Interface to the SCIP Optimization Suite
+
+## One-Shot Solver
+
+Solve a complete problem in a single call
+
+- [`scip_solve()`](scip_solve.md) : Solve a linear or mixed-integer
+  program using SCIP
+- [`scip_control()`](scip_control.md) : SCIP solver control parameters
+
+## Model Construction
+
+Build optimization models incrementally
+
+- [`scip_model()`](scip_model.md) : Create a SCIP model
+- [`scip_add_var()`](scip_add_var.md) : Add a variable to a SCIP model
+- [`scip_add_vars()`](scip_add_vars.md) : Add multiple variables to a
+  SCIP model
+- [`scip_set_objective_sense()`](scip_set_objective_sense.md) : Set
+  objective sense
+
+## Constraints
+
+Add constraints to a model
+
+- [`scip_add_linear_cons()`](scip_add_linear_cons.md) : Add a linear
+  constraint to a SCIP model
+- [`scip_add_quadratic_cons()`](scip_add_quadratic_cons.md) : Add a
+  quadratic constraint to a SCIP model
+- [`scip_add_sos1_cons()`](scip_add_sos1_cons.md) : Add a SOS1
+  constraint to a SCIP model
+- [`scip_add_sos2_cons()`](scip_add_sos2_cons.md) : Add a SOS2
+  constraint to a SCIP model
+- [`scip_add_indicator_cons()`](scip_add_indicator_cons.md) : Add an
+  indicator constraint to a SCIP model
+
+## Solve and Query
+
+Solve the model and retrieve results
+
+- [`scip_optimize()`](scip_optimize.md) : Solve a SCIP model
+- [`scip_get_status()`](scip_get_status.md) : Get solver status
+- [`scip_get_solution()`](scip_get_solution.md) : Get the best solution
+- [`scip_get_objval()`](scip_get_objval.md) : Get objective value of
+  best solution
+- [`scip_get_nsols()`](scip_get_nsols.md) : Get number of solutions
+  found
+- [`scip_get_sol()`](scip_get_sol.md) : Get the k-th solution from the
+  solution pool
+- [`scip_get_info()`](scip_get_info.md) : Get solver information
+
+## Parameters and Cleanup
+
+Configure solver parameters and free resources
+
+- [`scip_set_param()`](scip_set_param.md) : Set a SCIP parameter
+- [`scip_model_free()`](scip_model_free.md) : Free a SCIP model
+- [`print(`*`<scip_control>`*`)`](print.scip_control.md) : Print method
+  for scip_control objects
+- [`make_csc_matrix()`](make_csc_matrix.md) : Convert a matrix to CSC
+  (Compressed Sparse Column) format
