@@ -1,8 +1,13 @@
 #!/bin/sh
 
+# Source R's CC if available
+: ${R_HOME=`R RHOME`}
+if test -n "${R_HOME}"; then
+  CC=`"${R_HOME}/bin/R" CMD config CC`
+fi
+: ${CC:=cc}
+
 # Detect compiler support for -ffp-contract=off.
-# SCIP uses this for floating-point reproducibility across systems.
-: ${CC=cc}
 FP_FLAG=""
 if ${CC} -ffp-contract=off -x c -c /dev/null -o /dev/null 2>/dev/null; then
   FP_FLAG="-ffp-contract=off"
@@ -11,14 +16,15 @@ fi
 # Detect pthread (needed on Linux for SCIP's tinycthread;
 # macOS links pthreads implicitly).
 PTHREAD_FLAG=""
-cat > /tmp/conftest_pthread.c <<EOF
+CONFTEST=conftest_pthread_$$
+cat > ${CONFTEST}.c <<EOF
 #include <pthread.h>
 int main(void) { pthread_mutex_t m; pthread_mutex_init(&m, 0); return 0; }
 EOF
-if ${CC} -o /dev/null /tmp/conftest_pthread.c -lpthread 2>/dev/null; then
+if ${CC} -o ${CONFTEST} ${CONFTEST}.c -lpthread 2>/dev/null; then
   PTHREAD_FLAG="-lpthread"
 fi
-rm -f /tmp/conftest_pthread.c
+rm -f ${CONFTEST}.c ${CONFTEST}
 
 sed -e "s|@FP_CONTRACT_FLAG@|${FP_FLAG}|g" \
     -e "s|@PTHREAD_FLAG@|${PTHREAD_FLAG}|g" \
