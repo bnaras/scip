@@ -4,7 +4,8 @@ CXX_STD = CXX17
 # config/ has our static soplex/config.h and scip/config.h + scip/scip_export.h
 PKG_CPPFLAGS = -Iconfig -Isoplex/src -Iscip/src -Iscip/src/nauty \
     -DNDEBUG -DSCIP_STATIC_DEFINE \
-    -DSCIP_LONGINT_FORMAT=\"lld\"
+    -DSCIP_LONGINT_FORMAT=\"lld\" \
+    -D__STDC_NO_THREADS__
 
 # SCIP needs -ffp-contract=off for floating-point reproducibility (GCC/clang only)
 PKG_CFLAGS = @FP_CONTRACT_FLAG@
