@@ -39,6 +39,35 @@
 ^src/soplex/settings$
 ^src/soplex/\.github$
 ^src/papilo$
+# SCIP build/doc files not needed for R package
+^src/scip/CHANGELOG$
+^src/scip/Makefile$
+^src/scip/CMakeLists\.txt$
+^src/scip/CMakePresets\.json$
+^src/scip/cmake$
+^src/scip/INSTALL.*\.md$
+^src/scip/README\.md$
+^src/scip/suppressions\..*$
+^src/scip/scip-config\.cmake\.in$
+# SoPlex build/doc files
+^src/soplex/CHANGELOG$
+^src/soplex/Makefile$
+^src/soplex/CMakeLists\.txt$
+^src/soplex/cmake$
+^src/soplex/INSTALL\.md$
+^src/soplex/README\.md$
+^src/soplex/soplex-config\.cmake\.in$
+^src/soplex/build_webdemo\.sh$
+^src/soplex/astylecfg$
+^src/soplex/src/soplex/external/zstr$
+# SCIP source files not compiled
+^src/scip/src/scip/.*_xyz\.c$
+^src/scip/src/scip/exprinterpret_none\.c$
+^src/scip/src/scip/scipbuildflags\.c$
+^src/scip/src/scip/nlpi_conopt\.c$
+^src/scip/src/scip/nlpi_filtersqp\.c$
+^src/scip/src/scip/nlpi_worhp\.c$
+# Previously excluded vendored sources
 ^src/scip/src/amplmp$
 ^src/scip/src/rectlu$
 ^src/scip/src/lpiexact/lpiexact_spx\.cpp$
