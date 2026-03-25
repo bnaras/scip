@@ -7,11 +7,14 @@ if test -n "${R_HOME}"; then
 fi
 : ${CC:=cc}
 
+echo "configure: CC=${CC}"
+
 # Detect compiler support for -ffp-contract=off.
 FP_FLAG=""
 if ${CC} -ffp-contract=off -x c -c /dev/null -o /dev/null 2>/dev/null; then
   FP_FLAG="-ffp-contract=off"
 fi
+echo "configure: FP_FLAG=${FP_FLAG}"
 
 # Detect pthread (needed on Linux for SCIP's tinycthread;
 # macOS links pthreads implicitly).
@@ -25,7 +28,11 @@ if ${CC} -o ${CONFTEST} ${CONFTEST}.c -lpthread 2>/dev/null; then
   PTHREAD_FLAG="-lpthread"
 fi
 rm -f ${CONFTEST}.c ${CONFTEST}
+echo "configure: PTHREAD_FLAG=${PTHREAD_FLAG}"
 
 sed -e "s|@FP_CONTRACT_FLAG@|${FP_FLAG}|g" \
     -e "s|@PTHREAD_FLAG@|${PTHREAD_FLAG}|g" \
     src/Makevars.in > src/Makevars
+
+echo "configure: PKG_LIBS line from generated Makevars:"
+grep PKG_LIBS src/Makevars
