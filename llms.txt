@@ -26,7 +26,7 @@ pak::pak("bnaras/scip")
 ## Usage
 
 Refer to the vignettes for examples. However, one of the easiest way to
-use this and many other solvers is via [`CVXR`](http://cvxr.rbind.io)
+use this and many other solvers is via [`CVXR`](https://cvxr.rbind.io)
 (version 1.8.2 and higher).
 
 ## License
