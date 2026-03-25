@@ -1,6 +1,37 @@
-# scip
+# SCIP
 
-R SCIP Solver Interface
+This is an R interface to the [SCIP Optimization
+Suite](https://www.scipopt.org/). SCIP is one of the fastest
+non-commercial solvers for mixed integer programming (MIP) and mixed
+integer nonlinear programming (MINLP). It is also a framework for
+constraint integer programming and branch-cut-and-price. It allows for
+total control of the solution process and the access of detailed
+information down to the guts of the solver.
+
+## Installation
+
+Install the released version from CRAN:
+
+``` r
+install.packages("scip")
+```
+
+Or install the development version from GitHub:
+
+``` r
+# install.packages("pak")
+pak::pak("bnaras/scip")
+```
+
+## Usage
+
+Refer to the vignettes for examples. However, one of the easiest way to
+use this and many other solvers is via [`CVXR`](http://cvxr.rbind.io)
+(version 1.8.2 and higher).
+
+## License
+
+Apache License 2.0
 
 # Package index
 
