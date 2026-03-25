@@ -80,3 +80,5 @@
 ^00check\.log$
 ^tools/cmake_args\.sh$
 ^\.github$
+^README\.Rmd$
+^README\.html$
