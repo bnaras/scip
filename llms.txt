@@ -1,12 +1,12 @@
 # SCIP
 
-This is an R interface to the [SCIP Optimization
-Suite](https://www.scipopt.org/). SCIP is one of the fastest
-non-commercial solvers for mixed integer programming (MIP) and mixed
-integer nonlinear programming (MINLP). It is also a framework for
-constraint integer programming and branch-cut-and-price. It allows for
-total control of the solution process and the access of detailed
-information down to the guts of the solver.
+This is an R interface to the SCIP Optimization Suite (2025,
+<doi:10.48550/arXiv.2411.14927>). [SCIP](https://www.scipopt.org/) is
+one of the fastest non-commercial solvers for mixed integer programming
+(MIP) and mixed integer nonlinear programming (MINLP). It is also a
+framework for constraint integer programming and branch-cut-and-price.
+It allows for total control of the solution process and the access of
+detailed information down to the guts of the solver.
 
 ## Installation
 
