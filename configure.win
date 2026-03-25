@@ -1,10 +1,11 @@
 #!/bin/sh
 
-# Detect compiler support for -ffp-contract=off.
 : ${CC=gcc}
 FP_FLAG=""
 if echo "int main(void){return 0;}" | ${CC} -ffp-contract=off -x c -c - -o NUL 2>/dev/null; then
   FP_FLAG="-ffp-contract=off"
 fi
 
-sed -e "s|@FP_CONTRACT_FLAG@|${FP_FLAG}|g" src/Makevars.in > src/Makevars.win
+sed -e "s|@FP_CONTRACT_FLAG@|${FP_FLAG}|g" \
+    -e "s|@PTHREAD_FLAG@||g" \
+    src/Makevars.in > src/Makevars.win

@@ -10,7 +10,7 @@ PKG_CPPFLAGS = -Iconfig -Isoplex/src -Iscip/src -Iscip/src/nauty \
 PKG_CFLAGS = @FP_CONTRACT_FLAG@
 PKG_CXXFLAGS = @FP_CONTRACT_FLAG@
 
-PKG_LIBS = $(LAPACK_LIBS) $(BLAS_LIBS) $(FLIBS)
+PKG_LIBS = $(LAPACK_LIBS) $(BLAS_LIBS) $(FLIBS) @PTHREAD_FLAG@
 
 # --- SoPlex sources ---
 SOPLEX_SOURCES = \
@@ -422,7 +422,8 @@ SCIP_C_SOURCES = \
     scip/src/tclique/tclique_branch.c \
     scip/src/tclique/tclique_coloring.c \
     scip/src/tclique/tclique_graph.c \
-    scip/src/tpi/tpi_none.c \
+    scip/src/tinycthread/tinycthread.c \
+    scip/src/tpi/tpi_tnycthrd.c \
     scip/src/xml/xmlparse.c
 
 # --- SCIP C++ sources ---
