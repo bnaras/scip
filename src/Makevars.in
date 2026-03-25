@@ -4,14 +4,13 @@ CXX_STD = CXX17
 # config/ has our static soplex/config.h and scip/config.h + scip/scip_export.h
 PKG_CPPFLAGS = -Iconfig -Isoplex/src -Iscip/src -Iscip/src/nauty \
     -DNDEBUG -DSCIP_STATIC_DEFINE \
-    -DSCIP_LONGINT_FORMAT=\"lld\" \
-    -D__STDC_NO_THREADS__
+    -DSCIP_LONGINT_FORMAT=\"lld\"
 
 # SCIP needs -ffp-contract=off for floating-point reproducibility (GCC/clang only)
 PKG_CFLAGS = @FP_CONTRACT_FLAG@
 PKG_CXXFLAGS = @FP_CONTRACT_FLAG@
 
-PKG_LIBS = $(LAPACK_LIBS) $(BLAS_LIBS) $(FLIBS) @PTHREAD_FLAG@
+PKG_LIBS = $(LAPACK_LIBS) $(BLAS_LIBS) $(FLIBS)
 
 # --- SoPlex sources ---
 SOPLEX_SOURCES = \
@@ -423,8 +422,7 @@ SCIP_C_SOURCES = \
     scip/src/tclique/tclique_branch.c \
     scip/src/tclique/tclique_coloring.c \
     scip/src/tclique/tclique_graph.c \
-    scip/src/tinycthread/tinycthread.c \
-    scip/src/tpi/tpi_tnycthrd.c \
+    scip/src/tpi/tpi_none.c \
     scip/src/xml/xmlparse.c
 
 # --- SCIP C++ sources ---
