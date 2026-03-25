@@ -44,7 +44,27 @@ jobs:
           extra-packages: any::rcmdcheck
           needs: check
 
+      - name: Install package and run diagnostic
+        run: |
+          R CMD INSTALL . 2>&1 | tail -20
+          echo "=== Makevars PKG_LIBS ==="
+          cat src/Makevars | grep PKG_LIBS
+          echo "=== Quick test ==="
+          Rscript -e '
+            library(scip)
+            cat("Package loaded OK\n")
+            A <- matrix(c(6, 4, 1, 2), nrow = 2)
+            result <- scip_solve(
+              obj = c(-5, -4), A = A, b = c(24, 6),
+              sense = c("<=", "<="),
+              control = list(verbose = FALSE)
+            )
+            cat("Status:", result$status, "\n")
+            cat("Objval:", result$objval, "\n")
+          '
+
       - uses: r-lib/actions/check-r-package@v2
+        if: success()
         with:
           upload-snapshots: true
           build_args: 'c("--no-manual","--compact-vignettes=gs+qpdf")'
