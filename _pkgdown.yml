@@ -10,6 +10,9 @@ navbar:
     examples:
       text: Examples
       href: articles/scip-examples.html
+    changelog:
+      text: Changelog
+      href: news/index.html
     github:
       icon: fa-github
       href: https://github.com/bnaras/scip
