@@ -43,8 +43,10 @@ R_SCIP_PKG_HOME=`pwd`
 CONFIG_DIR=${R_SCIP_PKG_HOME}/inst/config
 
 # r_streams.h lives in CONFIG_DIR — SCIP/SoPlex r_pkg branches include it
-export CFLAGS="${CFLAGS} -I${CONFIG_DIR}"
-export CXXFLAGS="${CXXFLAGS} -I${CONFIG_DIR}"
+# SCIP_LONGINT_FORMAT: override SCIP's default "I64d" on Windows (MSVC format)
+# to "lld" which works with MinGW/gcc in Rtools
+export CFLAGS="${CFLAGS} -I${CONFIG_DIR} -DSCIP_LONGINT_FORMAT=\\\"lld\\\""
+export CXXFLAGS="${CXXFLAGS} -I${CONFIG_DIR} -DSCIP_LONGINT_FORMAT=\\\"lld\\\""
 export LDFLAGS
 
 echo ""
