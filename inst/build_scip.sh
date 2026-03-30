@@ -70,12 +70,9 @@ COMMON_CMAKE_OPTS="
     -DCMAKE_VERBOSE_MAKEFILE:bool=ON
 "
 
-# Platform-specific CMake generator flag
-OS_TYPE="$(uname -s)"
-if test "${OS_TYPE}" = "Darwin"; then
+# Platform-specific CMake flag
+if test "$(uname -s)" = "Darwin"; then
     CMAKE_PLATFORM_OPTS="-DCMAKE_HOST_APPLE:bool=ON"
-elif echo "${OS_TYPE}" | grep -qi 'mingw\|msys\|cygwin'; then
-    CMAKE_PLATFORM_OPTS="-G \"MinGW Makefiles\""
 else
     CMAKE_PLATFORM_OPTS="-G \"Unix Makefiles\""
 fi
