@@ -33,6 +33,12 @@
     </div>
 
     <div class="section level2">
+<h2 class="pkg-version" data-toc-text="1.10.0-1" id="scip-1100-1">scip 1.10.0-1<a class="anchor" aria-label="anchor" href="#scip-1100-1"></a></h2>
+<ul><li>Switched build system from hand-maintained Makevars.in (472 lines) to CMake-based build at install time, following the highs R package pattern.</li>
+<li>Solver sources (SCIP, SoPlex) moved from <code>src/</code> to <code>inst/</code> and deleted after compilation when installing from tarball, reducing installed size from ~258 MB to ~10 MB.</li>
+<li>Version now tracks SCIP Optimization Suite (10.0.x).</li>
+</ul></div>
+    <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.0.2" id="scip-002">scip 0.0.2<a class="anchor" aria-label="anchor" href="#scip-002"></a></h2>
 <p>Initial CRAN submission.</p>
 <ul><li>One-shot solver interface (<code>scip_solve</code>) and incremental model-building API (<code>scip_model</code>, <code>scip_add_var</code>, <code>scip_add_linear_cons</code>, <code>scip_add_quadratic_cons</code>, <code>scip_add_sos1_cons</code>, <code>scip_add_sos2_cons</code>, <code>scip_add_indicator_cons</code>).</li>
@@ -41,7 +47,8 @@
 <li>Vignette with LP, MIP, quadratic, and indicator constraint examples.</li>
 <li>Builds on macOS, Linux, and Windows using vendored SCIP 10.0.1 and SoPlex 8.0.1 sources.</li>
 </ul></div>
-  </main></div>
+  </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
+    </nav></aside></div>
 
 
     <footer><div class="pkgdown-footer-left">
