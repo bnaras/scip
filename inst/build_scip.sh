@@ -70,6 +70,16 @@ COMMON_CMAKE_OPTS="
     -DCMAKE_VERBOSE_MAKEFILE:bool=ON
 "
 
+# Platform-specific CMake generator flag
+OS_TYPE="$(uname -s)"
+if test "${OS_TYPE}" = "Darwin"; then
+    CMAKE_PLATFORM_OPTS="-DCMAKE_HOST_APPLE:bool=ON"
+elif echo "${OS_TYPE}" | grep -qi 'mingw\|msys\|cygwin'; then
+    CMAKE_PLATFORM_OPTS="-G \"MinGW Makefiles\""
+else
+    CMAKE_PLATFORM_OPTS="-G \"Unix Makefiles\""
+fi
+
 # ========================================================
 # Step 1: Build SoPlex (static library only)
 # ========================================================
@@ -98,11 +108,7 @@ SOPLEX_CMAKE_OPTS="
     -DQUADMATH:bool=OFF
 "
 
-if test "$(uname -s)" = "Darwin"; then
-    ${CMAKE_EXE} .. ${SOPLEX_CMAKE_OPTS} -DCMAKE_HOST_APPLE:bool=ON || exit 1
-else
-    ${CMAKE_EXE} .. ${SOPLEX_CMAKE_OPTS} -G "Unix Makefiles" || exit 1
-fi
+eval ${CMAKE_EXE} .. ${SOPLEX_CMAKE_OPTS} ${CMAKE_PLATFORM_OPTS} || exit 1
 
 # Build only the static library target (skip shared lib which fails
 # due to unresolved R symbols like Rprintf, r_cout, r_cerr)
@@ -150,11 +156,7 @@ SCIP_CMAKE_OPTS="
     -DTHREADSAFE:bool=ON
 "
 
-if test "$(uname -s)" = "Darwin"; then
-    ${CMAKE_EXE} .. ${SCIP_CMAKE_OPTS} -DCMAKE_HOST_APPLE:bool=ON || exit 1
-else
-    ${CMAKE_EXE} .. ${SCIP_CMAKE_OPTS} -G "Unix Makefiles" || exit 1
-fi
+eval ${CMAKE_EXE} .. ${SCIP_CMAKE_OPTS} ${CMAKE_PLATFORM_OPTS} || exit 1
 
 # Build only the static library target
 ${MAKE} libscip || exit 1
