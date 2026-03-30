@@ -1,6 +1,6 @@
 template:
   bootstrap: 5
-  bootswatch: flatly
+  bootswatch: cosmo
 
 navbar:
   structure:

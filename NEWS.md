@@ -1,3 +1,12 @@
+# scip 1.10.0-1
+
+- Switched build system from hand-maintained Makevars.in (472 lines) to
+  CMake-based build at install time, following the highs R package pattern.
+- Solver sources (SCIP, SoPlex) moved from `src/` to `inst/` and deleted
+  after compilation when installing from tarball, reducing installed size
+  from ~258 MB to ~10 MB.
+- Version now tracks SCIP Optimization Suite (10.0.x).
+
 # scip 0.0.2
 
 Initial CRAN submission.
