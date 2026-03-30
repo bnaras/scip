@@ -6,7 +6,7 @@ if test -n "${R_HOME}"; then
 fi
 : ${CC:=cc}
 
-# Detect compiler support for -ffp-contract=off.
+# Detect compiler support for -ffp-contract=off (floating-point reproducibility).
 FP_FLAG=""
 if ${CC} -ffp-contract=off -x c -c /dev/null -o /dev/null 2>/dev/null; then
   FP_FLAG="-ffp-contract=off"
@@ -24,6 +24,36 @@ if ${CC} -o ${CONFTEST} ${CONFTEST}.c -lpthread 2>/dev/null; then
 fi
 rm -f ${CONFTEST}.c ${CONFTEST}
 
+# Build SCIP + SoPlex from source via CMake
+R_SCIP_PKG_HOME=`pwd`
+bash inst/build_scip.sh || { echo "SCIP build failed!"; exit 1; }
+cd ${R_SCIP_PKG_HOME}
+
+# After CMake build, remove source trees if installing from tarball
+# (pre-built vignettes in inst/doc/ indicate tarball install).
+# This saves disk space in the installed package.
+if test -d inst/doc; then
+    rm -rf inst/scip inst/soplex inst/config
+fi
+
+R_SCIP_LIB_DIR=${R_SCIP_PKG_HOME}/src/sciplib
+R_SOPLEX_LIB_DIR=${R_SCIP_PKG_HOME}/src/soplexlib
+
+RSCIP_PKG_LIBS="-L${R_SCIP_LIB_DIR}/lib -lscip -L${R_SOPLEX_LIB_DIR}/lib -lsoplex"
+if test -d "${R_SCIP_LIB_DIR}/lib64"; then
+    RSCIP_PKG_LIBS="-L${R_SCIP_LIB_DIR}/lib64 -lscip ${RSCIP_PKG_LIBS}"
+fi
+if test -d "${R_SOPLEX_LIB_DIR}/lib64"; then
+    RSCIP_PKG_LIBS="${RSCIP_PKG_LIBS} -L${R_SOPLEX_LIB_DIR}/lib64 -lsoplex"
+fi
+
 sed -e "s|@FP_CONTRACT_FLAG@|${FP_FLAG}|g" \
     -e "s|@PTHREAD_FLAG@|${PTHREAD_FLAG}|g" \
+    -e "s|@RSCIP_LIB_DIR@|${R_SCIP_LIB_DIR}|g" \
+    -e "s|@RSCIP_PKG_LIBS@|${RSCIP_PKG_LIBS}|g" \
     src/Makevars.in > src/Makevars
+
+if [ -z "$(ls ${R_SCIP_LIB_DIR} 2>/dev/null | grep 'include')" ]; then
+    echo "SCIP libraries could not be found!"
+    exit 1
+fi

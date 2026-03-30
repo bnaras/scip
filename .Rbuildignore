@@ -4,81 +4,68 @@
 ^\.claude$
 ^cerr_to_r_error_strategy\.md$
 ^inst/plan$
-^src/_build$
-^src/_inst$
-^src/.*\.log$
-^src/scip/\.git
-^src/soplex/\.git
-^src/papilo/\.git
-^src/scip/\.gitlab
-^src/soplex/\.gitlab
-^src/papilo/\.gitlab
-^src/scip-.*\.tgz$
-^src/scipoptsuite-.*\.tgz$
+# ── Git/CI metadata in submodules (including nested) ──
+^inst/scip/\.git
+^inst/soplex/\.git
+^inst/scip/src/soplex/\.git
+^inst/soplex/src/papilo/\.git
+^inst/scip/\.gitlab
+^inst/soplex/\.gitlab
+^inst/scip/\.github$
+^inst/soplex/\.github$
+# ── Unused submodule (papilo) ──
+^src/papilo
+# ── CMake build artifacts (created at install time, never shipped) ──
+^inst/scip/build
+^inst/soplex/build
+^src/sciplib
+^src/soplexlib
+# ── SCIP directories guarded by BUILD_TESTING (we pass -DBUILD_TESTING=OFF) ──
+^inst/scip/applications$
+^inst/scip/check$
+^inst/scip/examples$
+^inst/scip/tests$
+^inst/scip/doc$
+# ── SCIP non-build directories (not referenced by CMakeLists.txt) ──
+^inst/scip/scripts$
+^inst/scip/make$
+^inst/scip/lint$
+^inst/scip/pclint$
+^inst/scip/tex$
+# ── SoPlex non-build directories (not referenced by CMakeLists.txt) ──
+# NOTE: check/ and tests/ are UNCONDITIONALLY add_subdirectory'd — KEEP them
+^inst/soplex/doc$
+^inst/soplex/make$
+^inst/soplex/lint$
+^inst/soplex/extra$
+^inst/soplex/scripts$
+^inst/soplex/settings$
+^inst/soplex/build_webdemo\.sh$
+^inst/soplex/astylecfg$
+^inst/soplex/src/soplex/external/zstr$
+# ── Non-source files (docs, changelogs) ──
+^inst/scip/CMakePresets\.json$
+^inst/scip/INSTALL.*\.md$
+^inst/scip/CHANGELOG$
+^inst/scip/README\.md$
+^inst/scip/suppressions\..*$
+^inst/soplex/INSTALL\.md$
+^inst/soplex/CHANGELOG$
+^inst/soplex/README\.md$
+# ── SCIP vendored sources excluded from CMake build ──
+^inst/scip/src/amplmp$
+^inst/scip/src/rectlu$
+# ── pkgdown / docs / github ──
 ^_pkgdown\.yml$
 ^docs$
 ^pkgdown$
-^src/scip/applications$
-^src/scip/check$
-^src/scip/examples$
-^src/scip/tests$
-^src/scip/doc$
-^src/scip/scripts$
-^src/scip/make$
-^src/scip/lint$
-^src/scip/pclint$
-^src/scip/tex$
-^src/scip/\.github$
-^src/soplex/check$
-^src/soplex/doc$
-^src/soplex/tests$
-^src/soplex/make$
-^src/soplex/lint$
-^src/soplex/extra$
-^src/soplex/scripts$
-^src/soplex/settings$
-^src/soplex/\.github$
-^src/papilo$
-# SCIP build/doc files not needed for R package
-^src/scip/CHANGELOG$
-^src/scip/Makefile$
-^src/scip/CMakeLists\.txt$
-^src/scip/CMakePresets\.json$
-^src/scip/cmake$
-^src/scip/INSTALL.*\.md$
-^src/scip/README\.md$
-^src/scip/suppressions\..*$
-^src/scip/scip-config\.cmake\.in$
-# SoPlex build/doc files
-^src/soplex/CHANGELOG$
-^src/soplex/Makefile$
-^src/soplex/CMakeLists\.txt$
-^src/soplex/cmake$
-^src/soplex/INSTALL\.md$
-^src/soplex/README\.md$
-^src/soplex/soplex-config\.cmake\.in$
-^src/soplex/build_webdemo\.sh$
-^src/soplex/astylecfg$
-^src/soplex/src/soplex/external/zstr$
-# SCIP source files not compiled
-^src/scip/src/scip/.*_xyz\.c$
-^src/scip/src/scip/exprinterpret_none\.c$
-^src/scip/src/scip/scipbuildflags\.c$
-^src/scip/src/scip/nlpi_conopt\.c$
-^src/scip/src/scip/nlpi_filtersqp\.c$
-^src/scip/src/scip/nlpi_worhp\.c$
-# Previously excluded vendored sources
-^src/scip/src/amplmp$
-^src/scip/src/rectlu$
-^src/scip/src/lpiexact/lpiexact_spx\.cpp$
-^src/scip/src/lpi/lpi_glop\.cpp$
-^src/scip/src/scip/nlpi_ipopt\.cpp$
-^src/scip/src/scip/reader_nl\.cpp$
-^src/scip/src/symmetry/compute_symmetry_nauty\.c$
+^\.github$
+^README\.Rmd$
+^README\.html$
+# ── Misc build artifacts ──
 ^00install\.out$
 ^2026-.*\.txt$
 ^00check\.log$
 ^tools/cmake_args\.sh$
-^\.github$
-^README\.Rmd$
-^README\.html$
+^scip-.*\.tgz$
+^scip_.*\.tar\.gz$
