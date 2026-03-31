@@ -9,7 +9,7 @@ Authors@R: c(
            comment = "SCIP, SoPlex, PaPILO libraries"))
 Description: Provides an R interface to SCIP (Solving Constraint Integer Programs), a framework for mixed-integer
 	     programming (MIP), mixed-integer nonlinear programming (MINLP), and constraint integer programming
-	     (2025, <doi:10.48550/arXiv.2411.14927>). Supports linear, quadratic, SOS, indicator, and knapsack
+	     (2025, <doi:10.48550/arXiv.2511.18580>). Supports linear, quadratic, SOS, indicator, and knapsack
 	     constraints with continuous, binary, and integer variables. Includes a one-shot solver interface
 	     and a model-building API for incremental problem construction.
 License: Apache License (>= 2)
