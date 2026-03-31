@@ -1,6 +1,6 @@
 Package: scip
 Title: Interface to the SCIP Optimization Suite
-Version: 1.10.0-1
+Version: 1.10.0-2
 Authors@R: c(
     person("Balasubramanian", "Narasimhan", email = "naras@stanford.edu",
            role = c("aut", "cre"),
