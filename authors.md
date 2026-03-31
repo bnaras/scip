@@ -25,14 +25,14 @@ R package.
     }
 
 Hojny C, others (2025). “The SCIP Optimization Suite 10.0.” Optimization
-Online. Technical Report, <https://doi.org/10.48550/arXiv.2411.14927>.
+Online. Technical Report, <https://doi.org/10.48550/arXiv.2511.18580>.
 
     @TechReport{,
       title = {The SCIP Optimization Suite 10.0},
       author = {Christopher Hojny and others},
       year = {2025},
       institution = {Optimization Online},
-      url = {https://doi.org/10.48550/arXiv.2411.14927},
+      url = {https://doi.org/10.48550/arXiv.2511.18580},
       note = {Technical Report},
     }
 
