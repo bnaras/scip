@@ -69,3 +69,4 @@
 ^tools/cmake_args\.sh$
 ^scip-.*\.tgz$
 ^scip_.*\.tar\.gz$
+^TODO\.md$
