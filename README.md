@@ -9,7 +9,7 @@
 <!-- badges: end -->
 
 This is an R interface to the [SCIP Optimization
-Suite](https://arxiv.org/abs/2511.18580).\
+Suite](https://arxiv.org/abs/2511.18580).
 [SCIP](https://www.scipopt.org/) is one of the fastest non-commercial
 solvers for mixed integer programming (MIP) and mixed integer nonlinear
 programming (MINLP). It is also a framework for constraint integer
