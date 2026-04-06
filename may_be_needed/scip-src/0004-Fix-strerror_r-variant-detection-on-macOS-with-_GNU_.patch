@@ -1,0 +1,30 @@
+From 03383d286fab4b6efa3715a6d9c7d3f173317bdf Mon Sep 17 00:00:00 2001
+From: Balasubramanian Narasimhan <b.naras@gmail.com>
+Date: Sun, 8 Mar 2026 16:31:51 -0700
+Subject: [PATCH 4/9] Fix strerror_r variant detection on macOS with
+ _GNU_SOURCE
+
+macOS always provides XSI strerror_r (returns int) regardless of
+_GNU_SOURCE, since it uses Apple libc, not glibc. Add __APPLE__ check
+to the preprocessor condition so macOS uses the XSI code path even
+when _GNU_SOURCE is defined.
+---
+ src/scip/misc.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/src/scip/misc.c b/src/scip/misc.c
+index 5c02d16e06..fe22b95d13 100644
+--- a/src/scip/misc.c
++++ b/src/scip/misc.c
+@@ -10730,7 +10730,7 @@ void SCIPprintSysError(
+    if ( strerror_s(buf, SCIP_MAXSTRLEN, errno) != 0 )
+       SCIPmessagePrintError("Unknown error number %d or error message too long.\n", errno);
+    SCIPmessagePrintError("%s: %s\n", message, buf);
+-#elif (_POSIX_C_SOURCE >= 200112L || __DARWIN_C_LEVEL > 200112L || _XOPEN_SOURCE >= 600) && ! defined(_GNU_SOURCE)
++#elif defined(__APPLE__) || ((_POSIX_C_SOURCE >= 200112L || __DARWIN_C_LEVEL > 200112L || _XOPEN_SOURCE >= 600) && ! defined(_GNU_SOURCE))
+    /* We are in the POSIX/XSI case, where strerror_r returns 0 on success; \0 termination is unclear. */
+    if ( strerror_r(errno, buf, SCIP_MAXSTRLEN) != 0 )
+       SCIPmessagePrintError("Unknown error number %d.\n", errno);
+-- 
+2.53.0
+

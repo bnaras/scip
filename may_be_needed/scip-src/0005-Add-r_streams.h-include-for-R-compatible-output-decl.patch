@@ -1,0 +1,41 @@
+From 85b435c8696a567de705222fdec29f6499ce04d5 Mon Sep 17 00:00:00 2001
+From: Balasubramanian Narasimhan <b.naras@gmail.com>
+Date: Tue, 24 Mar 2026 17:41:28 -0700
+Subject: [PATCH 5/9] Add r_streams.h include for R-compatible output
+ declarations
+
+Include config/r_streams.h in dejavu/utility.h and cppad/cppad.hpp
+so that r_cout()/r_cerr()/Rf_error() declarations are available
+without the old r_remap.h force-include.
+---
+ src/cppad/cppad.hpp  | 1 +
+ src/dejavu/utility.h | 1 +
+ 2 files changed, 2 insertions(+)
+
+diff --git a/src/cppad/cppad.hpp b/src/cppad/cppad.hpp
+index 828dee1be8..c18eb9db35 100644
+--- a/src/cppad/cppad.hpp
++++ b/src/cppad/cppad.hpp
+@@ -19,6 +19,7 @@ Please visit http://www.coin-or.org/CppAD/ for information on other licenses.
+ \brief contains all the variables and functions defined by the CppAD package.
+ */
+ 
++# include "r_streams.h"
+ # include <cppad/base_require.hpp> // all base type requirements
+ // ---------------------------------------------------------------------------
+ // CppAD general purpose library routines (can be included separately)
+diff --git a/src/dejavu/utility.h b/src/dejavu/utility.h
+index ef770e541c..54be92e1f8 100644
+--- a/src/dejavu/utility.h
++++ b/src/dejavu/utility.h
+@@ -3,6 +3,7 @@
+ // See LICENSE for extended copyright information.
+ 
+ #include <ostream>
++#include "r_streams.h"
+ #include <algorithm>
+ #include <random>
+ #include <unordered_map>
+-- 
+2.53.0
+

@@ -1,0 +1,34 @@
+From 43a0a60119b620984da0f8bf2abc53ae8494b60f Mon Sep 17 00:00:00 2001
+From: Balasubramanian Narasimhan <b.naras@gmail.com>
+Date: Tue, 24 Mar 2026 22:18:02 -0700
+Subject: [PATCH 8/9] Patch objconshdlr.h: replace fprintf(stdout,...) with
+ Rprintf
+
+---
+ src/objscip/objconshdlr.h | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/src/objscip/objconshdlr.h b/src/objscip/objconshdlr.h
+index 6ed4c5b3cd..9ce75bd309 100644
+--- a/src/objscip/objconshdlr.h
++++ b/src/objscip/objconshdlr.h
+@@ -39,6 +39,7 @@
+ 
+ #include "scip/scip.h"
+ #include "objscip/objprobcloneable.h"
++#include "r_streams.h"
+ 
+ namespace scip
+ {
+@@ -417,7 +418,7 @@ public:
+    virtual SCIP_DECL_CONSPRINT(scip_print)
+    {  /*lint --e{715}*/
+       if ( file == NULL )
+-         fprintf(stdout, "constraint handler <%s> does not support printing constraints\n", SCIPconshdlrGetName(conshdlr));
++         Rprintf("constraint handler <%s> does not support printing constraints\n", SCIPconshdlrGetName(conshdlr));
+       else
+          fprintf(file, "constraint handler <%s> does not support printing constraints\n", SCIPconshdlrGetName(conshdlr));
+       return SCIP_OKAY;
+-- 
+2.53.0
+

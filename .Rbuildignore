@@ -70,3 +70,4 @@
 ^scip-.*\.tgz$
 ^scip_.*\.tar\.gz$
 ^TODO\.md$
+^may_be_needed$
