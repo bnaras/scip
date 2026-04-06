@@ -63,6 +63,16 @@ SOPLEX_INSTALL_DIR=${R_SCIP_PKG_HOME}/src/soplexlib
 SCIP_INSTALL_DIR=${R_SCIP_PKG_HOME}/src/sciplib
 
 #
+# Detect ccache for faster rebuilds
+#
+CCACHE_OPTS=""
+CCACHE_EXE=`which ccache 2>/dev/null`
+if test -n "${CCACHE_EXE}"; then
+    CCACHE_OPTS="-DCMAKE_C_COMPILER_LAUNCHER=${CCACHE_EXE} -DCMAKE_CXX_COMPILER_LAUNCHER=${CCACHE_EXE}"
+    echo "Found ccache: ${CCACHE_EXE}"
+fi
+
+#
 # Common CMake options
 #
 COMMON_CMAKE_OPTS="
@@ -70,6 +80,7 @@ COMMON_CMAKE_OPTS="
     -DBUILD_SHARED_LIBS:bool=OFF
     -DBUILD_TESTING:bool=OFF
     -DCMAKE_VERBOSE_MAKEFILE:bool=ON
+    ${CCACHE_OPTS}
 "
 
 # Platform-specific CMake flag
@@ -151,8 +162,7 @@ SCIP_CMAKE_OPTS="
     -DSHARED:bool=OFF
     -DEXPRINT=none
     -DLPS=spx
-    -DTPI=tny
-    -DTHREADSAFE:bool=ON
+    -DTPI=${TPI_MODE:-none}
 "
 
 eval ${CMAKE_EXE} .. ${SCIP_CMAKE_OPTS} ${CMAKE_PLATFORM_OPTS} || exit 1
