@@ -1,6 +1,6 @@
 # Changelog
 
-## scip 1.10.2-1
+## scip 1.10.0-3
 
 - Upgrade to SCIP 10.0.2, SoPlex 8.0.2, PaPILO 3.0.0.
 - Enable OpenMP thread pool interface (TPI=omp) when the platform
