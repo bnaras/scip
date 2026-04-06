@@ -13,7 +13,7 @@ Description: Provides an R interface to SCIP (Solving Constraint Integer Program
 	     constraints with continuous, binary, and integer variables. Includes a one-shot solver interface
 	     and a model-building API for incremental problem construction.
 License: Apache License (>= 2)
-URL: https://bnaras.github.io/scip, https://scipopt.org/
+URL: https://bnaras.github.io/scip/, https://scipopt.org/
 BugReports: https://github.com/bnaras/scip/issues
 Depends:
     R (>= 4.0)
