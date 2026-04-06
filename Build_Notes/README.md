@@ -186,19 +186,6 @@ Dropped (dead with TPI=omp):
 - `0009` — Guard tinycthread.h includes. The `tpi_openmp.c` Rprintf fix
   was buried in this patch but we extracted it as a standalone fix above.
 
-NOT needed (investigated and confirmed harmless):
-
-- `pub_message.h` dead-code macros (`while(FALSE) printf`) — these do NOT
-  produce `__printf_chk` on the Ubuntu build. Changing them to `Rprintf`
-  breaks CMake compilation because `pub_message.h` is included by all SCIP
-  sources and `Rprintf` is not declared unless `r_streams.h` is included,
-  which in turn fails when the installed header is used by R's own compiler.
-- `sepa_mcf.c`, `expr_sum.c`, `scip_expr.c`, `expr_product.c` dead-code
-  macros — also confirmed not the source of `__printf_chk`.
-- Various other bare `printf` calls in files like `debug.c`, `symmetry.c`,
-  `lp.c`, `nlhdlr_quadratic.c`, etc. — present in the source but GCC
-  eliminates them or the files are not compiled in our configuration.
-
 #### soplex-src (4 patches applied)
 
 All carried forward from 10.0.1, applied cleanly:
@@ -226,8 +213,7 @@ No R-specific patches needed. Clean `v3.0.0` tag used directly.
 
 Main repo tag `pre-10.0.2` points to the last commit before the upgrade.
 
-### Saved patch files
+### Recovering old patches if needed
 
-The `scip-src/` and `soplex-src/` subdirectories contain the original
-`git format-patch` exports from the 10.0.1 `r_pkg` branches, preserved
-for reference. These can be applied with `git am --3way <file>.patch`.
+The `r_pkg_v1` branches on the submodule forks still contain the
+10.0.1 patches. To export them: `git format-patch master..r_pkg_v1`.
