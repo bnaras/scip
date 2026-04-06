@@ -24,6 +24,23 @@ etc. These are present throughout the SCIP and SoPlex C/C++ sources.
 Our `r_pkg` patches replace them with R-safe equivalents (`Rprintf`,
 `REprintf`, `Rf_error`, R I/O stream wrappers).
 
+### Critical: TPI=omp and `_FORTIFY_SOURCE`
+
+When SCIP is built with TPI=omp (OpenMP thread pool, enabled on Linux),
+`tpi_openmp.c` is compiled into `libscip.a`. This file contains a bare
+`printf("err1")` call. On Ubuntu with GCC 15 and `-D_FORTIFY_SOURCE=3`
+(inherited from R's CFLAGS per R-exts §1.2.6), GCC replaces `printf`
+with `__printf_chk` — and this symbol reference persists in the static
+library even though it's in an error path that's rarely hit.
+
+**This is invisible on macOS** because:
+1. macOS uses TPI=none (Apple clang lacks OpenMP), so `tpi_openmp.c`
+   is never compiled
+2. Even if it were, clang doesn't use `_FORTIFY_SOURCE` the same way
+
+**Lesson learned**: Always test on Linux with OpenMP when patching
+printf calls. macOS builds give false confidence.
+
 ## Workflow for upgrading to a new upstream release
 
 1. **Create a feature branch** on the main R package:
@@ -43,28 +60,45 @@ Our `r_pkg` patches replace them with R-safe equivalents (`Rprintf`,
    git format-patch master..r_pkg -o ~/patches/scip-src/
    ```
 
-4. **Start a fresh `r_pkg` from the new tag** and try applying patches:
+4. **Start a fresh `r_pkg` from the new tag** and apply patches:
    ```
-   git checkout -b r_pkg_new master
-   git am --3way ~/patches/scip-src/0001-*.patch
+   git checkout -b r_pkg master
+   git am --3way ~/patches/scip-src/0005-*.patch   # r_streams.h first
+   git am --3way ~/patches/scip-src/0001-*.patch   # then the rest
    # ... resolve conflicts, skip dead patches
    ```
 
-5. **Build and check** from the main R package:
+5. **Check for NEW bare printf calls** added by the upstream release:
+   ```
+   grep -rn '[^a-zA-Z_]printf\s*(' src/ --include='*.c' --include='*.cpp' \
+     | grep -v '//.*printf' \
+     | grep -v 'Rprintf\|snprintf\|sprintf\|fprintf\|vprintf' \
+     | grep -v '#define\|while.*FALSE'
+   ```
+   Pay special attention to `src/tpi/tpi_openmp.c` — only compiled
+   with TPI=omp on Linux, invisible on macOS.
+
+6. **Find the exact offending object** on Linux if `R CMD check` still
+   shows `__printf_chk` or similar:
+   ```
+   nm -A /path/to/sciplib/lib/libscip.a | grep '__printf_chk'
+   ```
+   This tells you exactly which `.o` file to fix.
+
+7. **Build and check** from the main R package:
    ```
    cd ~/GitHub && R CMD build scip && R CMD check scip_*.tar.gz --no-manual
    ```
    The key check is `checking compiled code ...` — it must show OK,
-   not WARNING. If symbols like `_exit`, `_abort`, `_printf`,
-   `__ZNSt3__14cerrE` appear, more patches are needed.
+   not WARNING or NOTE. **Test on both macOS AND Linux.**
 
-6. **Once clean**, rename `r_pkg_new` → `r_pkg`, force-push, update
+8. **Once clean**, rename branch to `r_pkg`, force-push, update
    submodule pointers, commit on the main R package.
 
-7. **Document** which patches were applied, which were dropped, and
+9. **Document** which patches were applied, which were dropped, and
    why, in this file.
 
-## Toward eliminating patches: upstream `-DR_INTERFACE`
+## Toward eliminating patches: upstream `-DEMBEDDED_INTERFACE`
 
 All our patches exist because SCIP/SoPlex assume a standalone
 executable context (stdout/stderr/exit are fine). For an embedded
@@ -97,6 +131,15 @@ This would benefit all downstream packages (R, Python, Julia) and
 eliminate the need for fork-specific patches entirely. PRs to
 upstream repos are a future goal.
 
+### R-exts §1.2.6 compliance
+
+Per "Writing R Extensions" §1.2.6, when using cmake to build vendored
+sources, R's compiler flags (CC, CFLAGS, CXX, CXXFLAGS, CPPFLAGS,
+LDFLAGS) must be passed through. Our `build_scip.sh` does this via
+environment variables, which cmake picks up. This means R's
+`-D_FORTIFY_SOURCE=3` (on Ubuntu) applies to the cmake build too —
+GCC then converts `printf` → `__printf_chk` even in error paths.
+
 ---
 
 ## Patch history
@@ -107,7 +150,6 @@ upstream repos are a future goal.
 
 Clean 10.0.2 sources build and pass tests but fail `R CMD check`
 compiled code checks (stdout/stderr/exit/abort symbols in static libs).
-Applied the patches below → `R CMD check` passes with Status: OK.
 
 #### Tinycthread patches confirmed dead
 
@@ -116,29 +158,50 @@ The bulk of our 10.0.1 patch burden was tinycthread-related
 (prefixing C11 names to avoid glibc C23 collisions, guarding
 includes, etc.). All of this is gone now.
 
-#### scip-src (9 original patches, 6 applied)
+#### scip-src (7 patches applied)
 
-**Applied** (needed for CRAN compliance):
+From Build_Notes (carried forward from 10.0.1):
 
-- `0001` — Bulk stdio/abort replacements in SCIP core (message.c, misc.c, etc.)
-- `0002` — Compiler warning fixes in dejavu, nauty, lpi_spx, rational.cpp.
-  Minor conflict in dejavu/ds.h and dejavu/utility.h (upstream changed
-  `<ostream>` to `<iostream>` in dejavu 2.1).
-- `0004` — macOS `strerror_r` variant detection with `_GNU_SOURCE`.
 - `0005` — `r_streams.h` header declaring `Rprintf`/`REprintf`/`r_cout()`/`r_cerr()` wrappers.
-  Minor conflict in dejavu/utility.h (same `<ostream>` → `<iostream>` change).
+  Minor conflict in dejavu/utility.h (upstream changed `<ostream>` to `<iostream>`
+  in dejavu 2.1). Applied first since other patches depend on it.
+- `0001` — Bulk stdio/abort replacements in SCIP core (message.c, misc.c, etc.)
 - `0006` — More stdio/abort replacements (separate commit from 0001).
 - `0008` — `objconshdlr.h`: `fprintf(stdout,...)` → `Rprintf`.
+- `0002` — Compiler warning fixes in dejavu, nauty, lpi_spx, rational.cpp.
+  Minor conflict in dejavu/ds.h and dejavu/utility.h (resolved).
+- `0004` — macOS `strerror_r` variant detection with `_GNU_SOURCE`.
 
-**Dropped** (dead with TPI=omp):
+New for 10.0.2:
+
+- `tpi_openmp.c` — `printf("err1")` → `Rprintf("err1")` + `#include "r_streams.h"`.
+  **This was the Ubuntu `__printf_chk` culprit.** Only compiled when TPI=omp
+  (Linux with OpenMP). Invisible on macOS where TPI=none. Found via
+  `nm -A libscip.a | grep __printf_chk` on the Ubuntu-built archive.
+
+Dropped (dead with TPI=omp):
 
 - `0003` — Static `githash.c` for non-CMake builds. CMake generates this now.
 - `0007` — Prefix tinycthread C11 names. Pure tinycthread fix.
-- `0009` — Guard tinycthread.h includes. Pure tinycthread fix.
+- `0009` — Guard tinycthread.h includes. The `tpi_openmp.c` Rprintf fix
+  was buried in this patch but we extracted it as a standalone fix above.
 
-#### soplex-src (5 original patches, 4 applied)
+NOT needed (investigated and confirmed harmless):
 
-**Applied** (needed for CRAN compliance):
+- `pub_message.h` dead-code macros (`while(FALSE) printf`) — these do NOT
+  produce `__printf_chk` on the Ubuntu build. Changing them to `Rprintf`
+  breaks CMake compilation because `pub_message.h` is included by all SCIP
+  sources and `Rprintf` is not declared unless `r_streams.h` is included,
+  which in turn fails when the installed header is used by R's own compiler.
+- `sepa_mcf.c`, `expr_sum.c`, `scip_expr.c`, `expr_product.c` dead-code
+  macros — also confirmed not the source of `__printf_chk`.
+- Various other bare `printf` calls in files like `debug.c`, `symmetry.c`,
+  `lp.c`, `nlhdlr_quadratic.c`, etc. — present in the source but GCC
+  eliminates them or the files are not compiled in our configuration.
+
+#### soplex-src (4 patches applied)
+
+All carried forward from 10.0.1, applied cleanly:
 
 - `0001` — Redirect `std::cerr`/`std::cout` through R I/O streams.
 - `0002` — Disable `fmt` `string_view`, redirect fmt I/O to R.
@@ -146,13 +209,22 @@ includes, etc.). All of this is gone now.
 - `0005` — Fix deprecated literal operator spacing in `fmt/format.h`.
   Upstream did not fix this in 8.0.2.
 
-**Dropped**:
+Dropped:
 
 - `0003` — Static `git_hash.cpp`. CMake generates this now.
 
 #### papilo-src
 
 No R-specific patches needed. Clean `v3.0.0` tag used directly.
+
+### Fallback branches
+
+| Branch | Content |
+|--------|---------|
+| `r_pkg` | Current (10.0.2 patches) |
+| `r_pkg_v1` | Old 10.0.1 patches (9 scip / 5 soplex) |
+
+Main repo tag `pre-10.0.2` points to the last commit before the upgrade.
 
 ### Saved patch files
 
