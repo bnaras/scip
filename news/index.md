@@ -1,5 +1,16 @@
 # Changelog
 
+## scip 1.10.0-4
+
+- Enable OpenMP thread pool interface (TPI=omp) when the platform
+  supports it, giving SCIP parallel branch-and-bound. Falls back
+  gracefully to TPI=none when OpenMP is unavailable.
+- Use `SHLIB_OPENMP_CXXFLAGS` in both `PKG_CXXFLAGS` and `PKG_LIBS` per
+  R-exts §1.2.1.1.
+- Guard `tinycthread.h` includes in symmetry files (only needed for
+  TPI=tny, not TPI=omp).
+- Replace `printf` with `Rprintf` in `tpi_openmp.c` for CRAN compliance.
+
 ## scip 1.10.0-1
 
 - Switched build system from hand-maintained Makevars.in (472 lines) to

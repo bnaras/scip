@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">scip</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.10.0-3</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.10.0-4</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -32,6 +32,13 @@
       <small>Source: <a href="https://github.com/bnaras/scip/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="1.10.0-4" id="scip-1100-4">scip 1.10.0-4<a class="anchor" aria-label="anchor" href="#scip-1100-4"></a></h2>
+<ul><li>Enable OpenMP thread pool interface (TPI=omp) when the platform supports it, giving SCIP parallel branch-and-bound. Falls back gracefully to TPI=none when OpenMP is unavailable.</li>
+<li>Use <code>SHLIB_OPENMP_CXXFLAGS</code> in both <code>PKG_CXXFLAGS</code> and <code>PKG_LIBS</code> per R-exts §1.2.1.1.</li>
+<li>Guard <code>tinycthread.h</code> includes in symmetry files (only needed for TPI=tny, not TPI=omp).</li>
+<li>Replace <code>printf</code> with <code>Rprintf</code> in <code>tpi_openmp.c</code> for CRAN compliance.</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="1.10.0-1" id="scip-1100-1">scip 1.10.0-1<a class="anchor" aria-label="anchor" href="#scip-1100-1"></a></h2>
 <ul><li>Switched build system from hand-maintained Makevars.in (472 lines) to CMake-based build at install time, following the highs R package pattern.</li>
