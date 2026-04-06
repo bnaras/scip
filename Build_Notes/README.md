@@ -158,51 +158,89 @@ The bulk of our 10.0.1 patch burden was tinycthread-related
 (prefixing C11 names to avoid glibc C23 collisions, guarding
 includes, etc.). All of this is gone now.
 
-#### scip-src (7 patches applied)
+#### scip-src: `bnaras/scip-src` `r_pkg` branch (7 commits on `v10.0.2`)
 
-From Build_Notes (carried forward from 10.0.1):
+Commits (in application order):
 
-- `0005` — `r_streams.h` header declaring `Rprintf`/`REprintf`/`r_cout()`/`r_cerr()` wrappers.
-  Minor conflict in dejavu/utility.h (upstream changed `<ostream>` to `<iostream>`
-  in dejavu 2.1). Applied first since other patches depend on it.
-- `0001` — Bulk stdio/abort replacements in SCIP core (message.c, misc.c, etc.)
-- `0006` — More stdio/abort replacements (separate commit from 0001).
-- `0008` — `objconshdlr.h`: `fprintf(stdout,...)` → `Rprintf`.
-- `0002` — Compiler warning fixes in dejavu, nauty, lpi_spx, rational.cpp.
-  Minor conflict in dejavu/ds.h and dejavu/utility.h (resolved).
-- `0004` — macOS `strerror_r` variant detection with `_GNU_SOURCE`.
+1. `59a5149` — **Add r_streams.h include for R-compatible output declarations**
+   Applied first since other patches depend on it.
+   Minor conflict in `src/dejavu/utility.h` (upstream changed `<ostream>` to `<iostream>`).
+   Files: `src/dejavu/utility.h`, `src/dejavu/dejavu.cpp`, `src/dejavu/graph.h`,
+   `src/dejavu/bfs.h`, `src/cppad/utility/error_handler.hpp` + 12 more cppad headers,
+   `src/lpi/lpi_clp.cpp`
 
-New for 10.0.2:
+2. `9acd9b4` — **R compatibility: replace exit/abort/fprintf/sprintf with R equivalents**
+   Bulk replacements in SCIP core C/C++ files.
+   Files: `src/scip/message.c`, `src/scip/message_default.c`, `src/scip/misc.c`,
+   `src/scip/scipshell.c`, `src/scip/rational.cpp`, `src/scip/cons_nonlinear.c`,
+   `src/scip/exprinterpret_cppad.cpp`, `src/xml/xmlparse.c`, `src/nauty/*.c`,
+   `src/tclique/tclique_def.h`, `src/xml/xmldef.h` + others (72 files total)
 
-- `tpi_openmp.c` — `printf("err1")` → `Rprintf("err1")` + `#include "r_streams.h"`.
-  **This was the Ubuntu `__printf_chk` culprit.** Only compiled when TPI=omp
-  (Linux with OpenMP). Invisible on macOS where TPI=none. Found via
-  `nm -A libscip.a | grep __printf_chk` on the Ubuntu-built archive.
+3. `5be9b93` — **Replace direct stdio/abort calls with R API equivalents**
+   More replacements in `src/blockmemshell/memory.c`, `src/dijkstra/dijkstra.c`,
+   `src/scip/dialog.c`, `src/scip/dialog_default.c`, `src/scip/disp.c`,
+   `src/scip/expr.c`, `src/scip/interrupt.c`, `src/scip/matrix.c`,
+   `src/scip/nlp.c`, `src/scip/nlpioracle.c`, `src/scip/reader_gms.c`,
+   `src/scip/reader_opb.c`, `src/scip/stat.c`, `src/scip/lpi/lpi_spx.cpp`
 
-Dropped (dead with TPI=omp):
+4. `ba686d0` — **Patch objconshdlr.h: replace fprintf(stdout,...) with Rprintf**
+   File: `src/objscip/objconshdlr.h`
 
-- `0003` — Static `githash.c` for non-CMake builds. CMake generates this now.
+5. `ddbd4a2` — **CRAN compliance: fix warnings in vendored sources**
+   Compiler warning fixes in dejavu, nauty, lpi_spx, rational.cpp.
+   Minor conflict in `src/dejavu/ds.h` and `src/dejavu/utility.h` (resolved).
+   Files: `src/dejavu/ds.h`, `src/dejavu/ir.h`, `src/dejavu/utility.h`,
+   `src/lpi/lpi_spx.cpp`, `src/nauty/nauty.c`, `src/scip/rational.cpp`,
+   `src/scip/pub_message.h`, `src/scip/pub_fileio.h`, `src/scip/scip_message.h`,
+   `src/scip/set.h`, `src/scip/stat.h`, `src/scip/presol_milp.cpp`,
+   `src/scip/certificate.cpp`, `src/scip/reader_zpl.c`,
+   `src/symmetry/compute_symmetry_sassy_nauty.cpp`
+
+6. `f1fb6a9` — **Fix strerror_r variant detection on macOS with _GNU_SOURCE**
+   File: `src/scip/misc.c` (strerror_r portability)
+
+7. `6794840` — **Fix printf in tpi_openmp.c for CRAN compliance** (NEW for 10.0.2)
+   `printf("err1")` → `Rprintf("err1")` + `#include "r_streams.h"`.
+   **This was the Ubuntu `__printf_chk` culprit.** Only compiled when TPI=omp
+   (Linux with OpenMP). Invisible on macOS where TPI=none. Found via
+   `nm -A libscip.a | grep __printf_chk` on the Ubuntu-built archive.
+   File: `src/tpi/tpi_openmp.c`
+
+Not carried forward from 10.0.1 (dead with TPI=omp):
+
+- `0003` — Static `githash.c`. CMake generates this now.
 - `0007` — Prefix tinycthread C11 names. Pure tinycthread fix.
-- `0009` — Guard tinycthread.h includes. The `tpi_openmp.c` Rprintf fix
-  was buried in this patch but we extracted it as a standalone fix above.
+- `0009` — Guard tinycthread.h includes. Dead; `tpi_openmp.c` fix extracted above.
 
-#### soplex-src (4 patches applied)
+#### soplex-src: `bnaras/soplex-src` `r_pkg` branch (4 commits on `v8.0.2`)
 
-All carried forward from 10.0.1, applied cleanly:
+Commits (in application order):
 
-- `0001` — Redirect `std::cerr`/`std::cout` through R I/O streams.
-- `0002` — Disable `fmt` `string_view`, redirect fmt I/O to R.
-- `0004` — `r_streams.h` header for R I/O wrappers.
-- `0005` — Fix deprecated literal operator spacing in `fmt/format.h`.
-  Upstream did not fix this in 8.0.2.
+1. `a726531` — **R compatibility: redirect std::cerr/std::cout through R I/O**
+   Files: `src/soplex/spxout.cpp`, `src/soplex/spxdefines.cpp`,
+   `src/soplex/spxdefines.h`, `src/soplex.hpp`, `src/soplexmain.cpp`,
+   `src/example.cpp`, `src/soplex_interface.cpp` + ~60 header files
+   (replaces `std::cerr`/`std::cout` stream references throughout)
 
-Dropped:
+2. `3a7e0b6` — **CRAN compliance: disable fmt string_view, redirect I/O to R**
+   Files: `src/soplex/external/fmt/core.h`, `src/soplex/external/fmt/format.h`,
+   `src/soplex/spxout.cpp` (major R I/O redirection additions)
+
+3. `574bd9b` — **Add r_streams.h include for R-compatible output declarations**
+   Files: `src/soplex/didxset.cpp`, `src/soplex/idxset.cpp`,
+   `src/soplex/nameset.cpp`, `src/soplex/spxdefines.cpp`
+
+4. `624a418` — **Fix deprecated literal operator spacing in fmt/format.h**
+   Upstream did not fix this in 8.0.2.
+   File: `src/soplex/external/fmt/format.h`
+
+Not carried forward from 10.0.1:
 
 - `0003` — Static `git_hash.cpp`. CMake generates this now.
 
-#### papilo-src
+#### papilo-src: `bnaras/papilo-src` `r_pkg` branch (0 commits on `v3.0.0`)
 
-No R-specific patches needed. Clean `v3.0.0` tag used directly.
+No R-specific patches needed. Clean upstream tag.
 
 ### Fallback branches
 
@@ -212,8 +250,5 @@ No R-specific patches needed. Clean `v3.0.0` tag used directly.
 | `r_pkg_v1` | Old 10.0.1 patches (9 scip / 5 soplex) |
 
 Main repo tag `pre-10.0.2` points to the last commit before the upgrade.
-
-### Recovering old patches if needed
-
-The `r_pkg_v1` branches on the submodule forks still contain the
-10.0.1 patches. To export them: `git format-patch master..r_pkg_v1`.
+To recover old patches: `git format-patch master..r_pkg_v1` from within
+any submodule.
