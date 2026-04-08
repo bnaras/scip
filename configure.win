@@ -38,7 +38,7 @@ EOF
   rm -f ${CONFTEST}.c ${CONFTEST} ${CONFTEST}.exe
 fi
 
-if test "${R_HAS_OPENMP}" = "yes" -o -n "${OPENMP_FLAG}"; then
+if test "${R_HAS_OPENMP}" = "yes" || test -n "${OPENMP_FLAG}"; then
   TPI_MODE=omp
   echo "OpenMP supported: using TPI=omp for SCIP thread pool"
 else
