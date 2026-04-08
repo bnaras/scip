@@ -51,6 +51,15 @@ rsconnect/
 # Build artifacts
 src/_build/
 src/_inst/
+src/Makevars
 src/Makevars.win
+src/*.o
+src/*.so
+src/*.dll
+src/sciplib/
+src/soplexlib/
 src/*.log
+
+# Knit artifacts (README.md is committed, .html is not needed)
+README.html
 
