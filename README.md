@@ -5,6 +5,10 @@
 
 <!-- badges: start -->
 
+[![CRAN
+status](https://www.r-pkg.org/badges/version/scip)](https://CRAN.R-project.org/package=scip)
+[![CRAN
+downloads](https://cranlogs.r-pkg.org/badges/scip)](https://CRAN.R-project.org/package=scip)
 [![R-CMD-check](https://github.com/bnaras/scip/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/bnaras/scip/actions/workflows/R-CMD-check.yaml)
 <!-- badges: end -->
 
@@ -34,9 +38,10 @@ pak::pak("bnaras/scip")
 
 ## Usage
 
-Refer to the vignettes for examples. However, one of the easiest way to
-use this and many other solvers is via [`CVXR`](https://cvxr.rbind.io/)
-(version 1.8.2 and higher).
+Refer to the [package
+vignette](https://bnaras.github.io/scip/articles/scip-examples.html) for
+examples. One of the easiest ways to use SCIP (and many other solvers)
+is via [`CVXR`](https://cvxr.rbind.io/) (version 1.8.2 and higher).
 
 ## License
 
