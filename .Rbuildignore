@@ -2,6 +2,7 @@
 ^.*\.Rproj$
 ^CLAUDE\.md$
 ^\.claude$
+^cran-comments\.md$
 ^cerr_to_r_error_strategy\.md$
 ^inst/plan$
 # ── Git/CI metadata in submodules (including nested) ──
