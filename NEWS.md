@@ -1,3 +1,13 @@
+# scip 1.10.0-4
+
+- Fix compilation with LLVM 23's libc++, reported by CRAN's
+  `r-devel-linux-x86_64-fedora-clang` check. libc++ 23 dropped many
+  transitive includes in all language modes, exposing three headers that
+  relied on them: `<istream>` in SoPlex's `basevectors.h` and
+  `mpsinput.cpp`, and `<cstdlib>` in SCIP's `multiprecision.hpp`. Because
+  `basevectors.h` is reached from `soplex.h`, the first of these broke
+  every translation unit including SoPlex. No user-visible change.
+
 # scip 1.10.0-3
 
 - Upgrade to SCIP 10.0.2, SoPlex 8.0.2, PaPILO 3.0.0.
