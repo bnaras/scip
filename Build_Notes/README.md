@@ -268,6 +268,7 @@ SoPlex's build dir for `soplex-config.cmake`).
 | CRAN clang-23 / libc++ Linux harness (`new_design/issues/c++23`, Fedora 44 x86_64, clang 23.1.0, R-devel r90448, TPI=omp), `R CMD check --as-cran --no-manual` on the same tarball | **Status: 1 NOTE** — `scipopt.org` HTTP 429 (rate limiting, same as the 1.10.0-4 submission); `checking compiled code ... OK` (the `nm` scan, with `tpi_openmp.c` compiled in); tests OK; vignette rebuild OK; 0 compile errors; 9m42s under Rosetta |
 | `.Rinstignore` change, tarball path: `R CMD build` + `R CMD check --as-cran` | Status: OK; installed size 10.5 MB (unchanged); "GNU extensions in Makefiles" is INFO only (GNU make is a declared SystemRequirement); `inst/doc/scip-examples.{Rmd,R,html}` present in the installed package |
 | `.Rinstignore` change, in-tree path: `R CMD INSTALL --preclean -l <lib> .` from the checkout | installed size **10 MB** (was 257 MB); no `scip/`, `soplex/`, `config/`, `plan/` or `build_scip.sh` in the library; `inst/scip/build` and `inst/soplex/build` removed; `git status` shows only the intended edits |
+| **Final tarball (`4be2c4c`, SHA-256 `90efb790…`) on the clang-23 harness rebuilt with R-devel 2026-10-02 r90634** | **Status: 1 NOTE** (`scipopt.org` 429 only); `checking compiled code ... OK`; GNU extensions in Makefiles INFO only; installed size 10.2 MB; tests OK; vignette OK; 0 compile errors; 9m35s. `verify_harness.sh`: all required components present |
 | win-builder | not run (user) |
 
 ### Upgrade 10.0.1 → 10.0.2 (2026-04-06)
