@@ -238,7 +238,7 @@ Clean upstream tag, still not compiled (`PAPILO:bool=OFF`).
 | tinytest suite on that install | All ok, 115 results |
 | Emphasis settings observed in SCIP's log | `presolve_emphasis="off"` → 0 presolve rounds (default 3–11); `separating_emphasis="off"` → no cut-pool restarts; `emphasis="cpsolver"` → 640,919 nodes vs 1 (no LP); identical optimum throughout |
 | `R CMD build` + `R CMD check --as-cran` on the tarball, macOS | **Status: OK, 0 NOTEs** (`_R_CHECK_CRAN_INCOMING_REMOTE_=false`); `checking compiled code ... OK`; vignette rebuild OK |
-| CRAN clang-23 / libc++ Linux harness (`new_design/issues/c++23`), TPI=omp, `nm` scan | _see the session handoff `notes/session_handoff_2026-10-03_scip_10.1.0.md`_ |
+| CRAN clang-23 / libc++ Linux harness (`new_design/issues/c++23`, Fedora 44 x86_64, clang 23.1.0, R-devel r90448, TPI=omp), `R CMD check --as-cran --no-manual` on the same tarball | **Status: 1 NOTE** — `scipopt.org` HTTP 429 (rate limiting, same as the 1.10.0-4 submission); `checking compiled code ... OK` (the `nm` scan, with `tpi_openmp.c` compiled in); tests OK; vignette rebuild OK; 0 compile errors; 9m42s under Rosetta |
 | win-builder | not run (user) |
 
 ### Upgrade 10.0.1 → 10.0.2 (2026-04-06)
