@@ -17,6 +17,12 @@
   `"counter"`, `"phasefeas"`, `"phaseimprove"`, `"phaseproof"`,
   `"benchmark"`. All emphasis settings are applied before individual
   parameters, so a native parameter passed via `...` still wins.
+- Installing from a source checkout (for example with `remotes` or
+  `devtools`) no longer copies the bundled SCIP and SoPlex source trees
+  (about 250 MB) into the R library. A top-level `.Rinstignore` now
+  excludes them, replacing the previous `configure` heuristic that deleted
+  the sources only when pre-built vignettes were present. Installed size
+  from a CRAN tarball is unchanged.
 
 # scip 1.10.0-4
 

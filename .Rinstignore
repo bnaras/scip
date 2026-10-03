@@ -1,0 +1,5 @@
+^inst/scip/
+^inst/soplex/
+^inst/config/
+^inst/plan/
+^inst/build_scip[.]sh$

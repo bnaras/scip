@@ -53,10 +53,10 @@ R_SCIP_PKG_HOME=`pwd`
 bash inst/build_scip.sh || { echo "SCIP build failed!"; exit 1; }
 cd ${R_SCIP_PKG_HOME}
 
-# After CMake build, remove source trees if installing from tarball
-if test -d inst/doc; then
-    rm -rf inst/scip inst/soplex inst/config
-fi
+# The bundled source trees (inst/scip, inst/soplex, inst/config) are kept
+# out of the installed package by the top-level .Rinstignore, which R
+# applies when copying inst/ to the library -- after this script has
+# compiled the static libraries. Nothing is deleted from the source tree.
 
 R_SCIP_LIB_DIR=${R_SCIP_PKG_HOME}/src/sciplib
 R_SOPLEX_LIB_DIR=${R_SCIP_PKG_HOME}/src/soplexlib

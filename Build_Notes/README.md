@@ -220,6 +220,33 @@ One new patch:
 
 Clean upstream tag, still not compiled (`PAPILO:bool=OFF`).
 
+#### `.Rinstignore` replaces the `inst/doc` deletion heuristic (same release)
+
+Lesson carried over from the R `highs` package (its 2026-07-14 `cran-shim`
+work). `configure` and `configure.win` used to do
+`if test -d inst/doc; then rm -rf inst/scip inst/soplex inst/config; fi`,
+inferring "tarball install" from the presence of built vignettes. Two
+measured problems: an in-tree install (`R CMD INSTALL .`, `devtools`,
+`remotes` without a build step) copied **257 MB** of SCIP/SoPlex source
+into the library (tarball install: 10.5 MB); and on a checkout where
+`inst/doc` exists (e.g. after `devtools::build_vignettes()`) the same
+command would delete the submodule working trees.
+
+Now: top-level `.Rinstignore` with anchored patterns
+`^inst/scip/`, `^inst/soplex/`, `^inst/config/`, `^inst/plan/`,
+`^inst/build_scip[.]sh$`. R matches these (Perl, case-insensitive) against
+the **full recursive paths** under `inst/` (`tools:::.install_packages`),
+so they must be anchored — an unanchored `/scip` would also drop
+`inst/doc/scip-examples.html`, i.e. the vignette. The `rm -rf` is gone
+from both configure scripts.
+
+Companion (also found empirically in highs): the old blanket `rm -rf` was
+incidentally removing cmake's generated `build/` trees, whose Makefiles
+trip `R CMD check`'s "GNU extensions in Makefiles" WARNING.
+`inst/build_scip.sh` now removes `inst/scip/build` and `inst/soplex/build`
+itself, after SCIP's library is copied out (SCIP's cmake step needs
+SoPlex's build dir for `soplex-config.cmake`).
+
 #### R package changes in the same release
 
 - `scip_control()` gains `presolve_emphasis`, `separating_emphasis`
@@ -239,6 +266,8 @@ Clean upstream tag, still not compiled (`PAPILO:bool=OFF`).
 | Emphasis settings observed in SCIP's log | `presolve_emphasis="off"` → 0 presolve rounds (default 3–11); `separating_emphasis="off"` → no cut-pool restarts; `emphasis="cpsolver"` → 640,919 nodes vs 1 (no LP); identical optimum throughout |
 | `R CMD build` + `R CMD check --as-cran` on the tarball, macOS | **Status: OK, 0 NOTEs** (`_R_CHECK_CRAN_INCOMING_REMOTE_=false`); `checking compiled code ... OK`; vignette rebuild OK |
 | CRAN clang-23 / libc++ Linux harness (`new_design/issues/c++23`, Fedora 44 x86_64, clang 23.1.0, R-devel r90448, TPI=omp), `R CMD check --as-cran --no-manual` on the same tarball | **Status: 1 NOTE** — `scipopt.org` HTTP 429 (rate limiting, same as the 1.10.0-4 submission); `checking compiled code ... OK` (the `nm` scan, with `tpi_openmp.c` compiled in); tests OK; vignette rebuild OK; 0 compile errors; 9m42s under Rosetta |
+| `.Rinstignore` change, tarball path: `R CMD build` + `R CMD check --as-cran` | Status: OK; installed size 10.5 MB (unchanged); "GNU extensions in Makefiles" is INFO only (GNU make is a declared SystemRequirement); `inst/doc/scip-examples.{Rmd,R,html}` present in the installed package |
+| `.Rinstignore` change, in-tree path: `R CMD INSTALL --preclean -l <lib> .` from the checkout | installed size **10 MB** (was 257 MB); no `scip/`, `soplex/`, `config/`, `plan/` or `build_scip.sh` in the library; `inst/scip/build` and `inst/soplex/build` removed; `git status` shows only the intended edits |
 | win-builder | not run (user) |
 
 ### Upgrade 10.0.1 → 10.0.2 (2026-04-06)
