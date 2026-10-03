@@ -43,6 +43,63 @@ ctrl6 <- scip_control(heuristics_emphasis = "aggressive")
 expect_equal(ctrl6$heuristics_emphasis, "aggressive")
 
 ## -----------------------------------------------------------------------
+## Test 6b: Presolve / separating / global emphasis (issue #2)
+## -----------------------------------------------------------------------
+ctrl6b <- scip_control(presolve_emphasis = "aggressive",
+                       separating_emphasis = "fast",
+                       emphasis = "feasibility")
+expect_equal(ctrl6b$presolve_emphasis, "aggressive")
+expect_equal(ctrl6b$separating_emphasis, "fast")
+expect_equal(ctrl6b$emphasis, "feasibility")
+## Defaults are not stored at all, so the C layer leaves SCIP untouched
+expect_null(ctrl6$presolve_emphasis)
+expect_null(ctrl6$separating_emphasis)
+expect_null(ctrl6$emphasis)
+## Invalid values are rejected by match.arg()
+expect_error(scip_control(presolve_emphasis = "very"))
+expect_error(scip_control(separating_emphasis = "very"))
+expect_error(scip_control(emphasis = "very"))
+## Print method lists them
+out6b <- capture.output(print(ctrl6b))
+expect_true(any(grepl("presolve emphasis: aggressive", out6b)))
+expect_true(any(grepl("separating emphasis: fast", out6b)))
+expect_true(any(grepl("emphasis: feasibility", out6b)))
+
+## -----------------------------------------------------------------------
+## Test 6c: The emphasis settings reach SCIP and solve correctly
+## -----------------------------------------------------------------------
+## Small knapsack-style MIP; optimum is x = (1, 1, 0), objective -7.
+A6c <- matrix(c(3, 4, 2), nrow = 1)
+for (ps in c("aggressive", "fast", "off")) {
+    res6c <- scip_solve(
+        obj   = c(-3, -4, -2),
+        A     = A6c,
+        b     = 7,
+        sense = "<=",
+        vtype = "B",
+        control = list(verbose = FALSE,
+                       presolve_emphasis = ps,
+                       separating_emphasis = ps,
+                       heuristics_emphasis = ps)
+    )
+    expect_equal(res6c$status, "optimal", info = ps)
+    expect_equal(res6c$objval, -7, info = ps)
+}
+for (em in c("feasibility", "optimality", "hardlp", "numerics", "easycip",
+             "cpsolver")) {
+    res6d <- scip_solve(
+        obj   = c(-3, -4, -2),
+        A     = A6c,
+        b     = 7,
+        sense = "<=",
+        vtype = "B",
+        control = list(verbose = FALSE, emphasis = em)
+    )
+    expect_equal(res6d$status, "optimal", info = em)
+    expect_equal(res6d$objval, -7, info = em)
+}
+
+## -----------------------------------------------------------------------
 ## Test 7: Print method works
 ## -----------------------------------------------------------------------
 expect_true(is.character(capture.output(print(ctrl2))))

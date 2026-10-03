@@ -393,11 +393,23 @@ for (i in 1:3) {
 ## Solver Controls
 
 Use `scip_control()` with the one-shot interface, or `scip_set_param()`
-with the model-building interface, to tune solver behavior.
+with the model-building interface, to tune solver behavior. Besides
+individual parameters, `scip_control()` exposes SCIP's emphasis
+meta-settings, which adjust whole families of parameters at once:
+`presolve_emphasis`, `heuristics_emphasis` and `separating_emphasis`
+(`"aggressive"`, `"fast"`, `"off"`), and the global `emphasis`
+(`"feasibility"`, `"optimality"`, `"hardlp"`, `"numerics"`, ...). They are
+applied before any individual parameter, so an explicit setting always wins.
 
 ```{r controls}
 ## One-shot: time limit and gap tolerance
 ctrl <- scip_control(verbose = FALSE, time_limit = 60, gap_limit = 0.01)
+
+## One-shot: aggressive presolving, heuristics, and cut separation
+ctrl2 <- scip_control(verbose = FALSE,
+                      presolve_emphasis = "aggressive",
+                      heuristics_emphasis = "aggressive",
+                      separating_emphasis = "aggressive")
 
 ## Model-building: set SCIP parameters directly
 m <- scip_model("tuning_example")

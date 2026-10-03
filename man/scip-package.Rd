@@ -4,16 +4,16 @@
 \name{scip-package}
 \alias{scip}
 \alias{scip-package}
-\title{scip: R Interface to the SCIP Optimization Suite}
+\title{scip: Interface to the SCIP Optimization Suite}
 \description{
 \if{html}{\figure{logo.png}{options: style='float: right' alt='logo' width='120'}}
 
-Provides an R interface to SCIP (Solving Constraint Integer Programs), a framework for mixed-integer programming (MIP), mixed-integer nonlinear programming (MINLP), and constraint integer programming. Supports linear, quadratic, SOS, indicator, and knapsack constraints with continuous, binary, and integer variables. Includes a one-shot solver interface and a model-building API for incremental problem construction.
+Provides an R interface to SCIP (Solving Constraint Integer Programs), a framework for mixed-integer programming (MIP), mixed-integer nonlinear programming (MINLP), and constraint integer programming (2025, \doi{10.48550/arXiv.2511.18580}). Supports linear, quadratic, SOS, indicator, and knapsack constraints with continuous, binary, and integer variables. Includes a one-shot solver interface and a model-building API for incremental problem construction.
 }
 \seealso{
 Useful links:
 \itemize{
-  \item \url{https://github.com/bnaras/scip}
+  \item \url{https://bnaras.github.io/scip/}
   \item \url{https://scipopt.org/}
   \item Report bugs at \url{https://github.com/bnaras/scip/issues}
 }
@@ -21,6 +21,11 @@ Useful links:
 }
 \author{
 \strong{Maintainer}: Balasubramanian Narasimhan \email{naras@stanford.edu} (\href{https://orcid.org/0000-0001-5852-7639}{ORCID})
+
+Authors:
+\itemize{
+  \item Balasubramanian Narasimhan \email{naras@stanford.edu} (\href{https://orcid.org/0000-0001-5852-7639}{ORCID})
+}
 
 Other contributors:
 \itemize{

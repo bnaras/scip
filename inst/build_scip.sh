@@ -143,6 +143,17 @@ mkdir -p ${SCIP_INSTALL_DIR}/lib
 mkdir -p ${SCIP_INSTALL_DIR}/include
 cd ${SCIP_BUILD_DIR}
 
+# .Rbuildignore drops inst/scip/doc (1 MB of doxygen inputs) from the
+# tarball, but since SCIP 10.1.0 the top-level CMakeLists.txt does
+# add_subdirectory(doc EXCLUDE_FROM_ALL) unconditionally (it used to be
+# inside if(BUILD_TESTING)). doc/CMakeLists.txt only defines an optional
+# `doc` target that nothing else references, so an empty stub suffices.
+# Same pattern as the SoPlex check/ stub above.
+if test ! -d ${SCIP_SRC_DIR}/doc; then
+    mkdir -p ${SCIP_SRC_DIR}/doc
+    echo "# stub" > ${SCIP_SRC_DIR}/doc/CMakeLists.txt
+fi
+
 # SOPLEX_DIR points at the SoPlex *build* dir where soplex-config.cmake lives
 SCIP_CMAKE_OPTS="
     ${COMMON_CMAKE_OPTS}

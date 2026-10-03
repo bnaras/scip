@@ -144,6 +144,103 @@ GCC then converts `printf` → `__printf_chk` even in error paths.
 
 ## Patch history
 
+### Upgrade 10.0.2 → 10.1.0 (2026-10-03)
+
+**Upstream tags**: SCIP `v10.1.0` (`c8e5737a84`), SoPlex `v8.1.0`
+(`a0061053`), PaPILO `v3.0.2` (`3f1ba692`) — the SCIP Optimization Suite
+10.1.0, released 2026-09-18. R package version `1.10.1-1`.
+
+**Branch layout for this upgrade.** Everything was done on new branches
+so that the released state stays recoverable:
+
+| Repo | Released 1.10.0-4 state lives on | Upgrade branch |
+|------|----------------------------------|----------------|
+| `scip` (parent) | `fix-libcxx23-transitive-includes` (`8d12ca8`) | `upgrade/scip-10.1.0` |
+| `scip-src` | `fix-libcxx23-transitive-includes` (`2aafcef9b5`) | `r_pkg-10.1.0` |
+| `soplex-src` | `fix-libcxx23-transitive-includes` (`a9d8ed31`) | `r_pkg-8.1.0` |
+| `papilo-src` | `r_pkg` (`4cbdc327`) | `r_pkg-3.0.2` |
+
+Note that `main` and the `r_pkg` branches were **never fast-forwarded** to
+the 1.10.0-4 release (one libc++ commit each in scip-src and soplex-src,
+two commits in the parent). The patch series below was therefore exported
+from the `fix-libcxx23-transitive-includes` tips, not from `r_pkg`. Copies
+of the exported `.patch` files are kept in the new_design repo under
+`issues/scip_10.1.0/patches/`. When this upgrade is merged, move `r_pkg`
+to the new tips (`r_pkg-*`) and keep the old ones as `r_pkg-10.0.2` /
+`r_pkg-8.0.2`; `.gitmodules` still says `branch = r_pkg` and was left alone.
+
+**Upstream API check.** The SCIP 10.1.0 release notes list no deleted or
+changed API functions and no changed parameters; the 44 `SCIP*` calls in
+`src/scip_wrapper.c` are all unchanged. New in 10.1.0 are cut-generation
+helpers, solving-phase queries, IIS accessors and a few parameters, none
+used here. Upstream did **not** adopt the libc++ 23 include fixes
+(`basevectors.h` still lacks `<istream>`, `multiprecision.hpp` still lacks
+`<cstdlib>`), so both patches are carried forward.
+
+**Differential grep for new stdio/exit calls** (step 5 above, run as a set
+difference between the patched 10.0.2 tree and the fresh 10.1.0 tree, so
+only *new* sites show): SCIP 2 hits, SoPlex 0 hits.
+
+**Tarball-only build break (found by `R CMD check`, invisible to an in-tree
+`R CMD INSTALL`).** SCIP 10.1.0 moved `add_subdirectory(doc EXCLUDE_FROM_ALL)`
+out of the `if(BUILD_TESTING)` block (changelog 10.0.3: "doc target ... not
+available when using -DBUILD_TESTING=OFF"). `.Rbuildignore` strips
+`inst/scip/doc`, so the tarball's cmake configure died with
+`add_subdirectory given source "doc" which is not an existing directory`.
+Fix: `inst/build_scip.sh` now recreates `doc/CMakeLists.txt` as a stub when
+the directory is missing, exactly like the existing SoPlex `check/` stub.
+`doc/CMakeLists.txt` upstream only defines an optional doxygen target that
+nothing else references. **Lesson: always gate on the tarball, never on the
+in-tree install** — the two differ by everything in `.Rbuildignore`.
+
+#### scip-src: `bnaras/scip-src` `r_pkg-10.1.0` branch (10 commits on `v10.1.0`)
+
+All 9 patches from 10.0.2 re-applied with `git am --3way`. One conflict:
+
+- `src/scip/scipshell.c` usage string — upstream added a `-t <threads>`
+  option to the same `printf` the patch turns into `Rprintf`. Kept the
+  upstream text with `Rprintf`.
+
+One new patch:
+
+10. `928a3404ec` — **Fix new bare printf in scipshell.c (SCIP 10.1.0)**
+    The error path of the new `-t` option calls `printf()` directly;
+    `scipshell.c` is compiled into `libscip`. The other new `printf`, in
+    `src/scip/var.c`, is inside the `DEBUGUSES_VARNAME` block, which is
+    commented out upstream and never compiled; left untouched.
+
+#### soplex-src: `bnaras/soplex-src` `r_pkg-8.1.0` branch (4 commits on `v8.1.0`)
+
+4 of 5 patches re-applied cleanly. Dropped:
+
+- `624a418` — **Fix deprecated literal operator spacing in fmt/format.h**.
+  Fixed upstream in 8.1.0 (`git am` reported "Patch already applied").
+
+#### papilo-src: `bnaras/papilo-src` `r_pkg-3.0.2` branch (0 commits on `v3.0.2`)
+
+Clean upstream tag, still not compiled (`PAPILO:bool=OFF`).
+
+#### R package changes in the same release
+
+- `scip_control()` gains `presolve_emphasis`, `separating_emphasis`
+  (GitHub issue #2, Jeff Hanson / prioritizr) and the global `emphasis`;
+  `src/scip_wrapper.c` applies them via `SCIPsetEmphasis`,
+  `SCIPsetPresolving`, `SCIPsetHeuristics`, `SCIPsetSeparating`, in that
+  order, before the individual `scip_params`.
+- Docs regenerated with roxygen2 8.1.0 (which replaces `RoxygenNote` by
+  `Config/roxygen2/version` in DESCRIPTION).
+
+#### Verification
+
+| Gate | Result |
+|------|--------|
+| `R CMD INSTALL --preclean` in-tree, macOS arm64, R 4.6.1 | OK, 3m39s; 36 warnings, all `-Wcast-align` in vendored `nauty/nausparse.c` (pre-existing) |
+| tinytest suite on that install | All ok, 115 results |
+| Emphasis settings observed in SCIP's log | `presolve_emphasis="off"` → 0 presolve rounds (default 3–11); `separating_emphasis="off"` → no cut-pool restarts; `emphasis="cpsolver"` → 640,919 nodes vs 1 (no LP); identical optimum throughout |
+| `R CMD build` + `R CMD check --as-cran` on the tarball, macOS | **Status: OK, 0 NOTEs** (`_R_CHECK_CRAN_INCOMING_REMOTE_=false`); `checking compiled code ... OK`; vignette rebuild OK |
+| CRAN clang-23 / libc++ Linux harness (`new_design/issues/c++23`), TPI=omp, `nm` scan | _see the session handoff `notes/session_handoff_2026-10-03_scip_10.1.0.md`_ |
+| win-builder | not run (user) |
+
 ### Upgrade 10.0.1 → 10.0.2 (2026-04-06)
 
 **Upstream tags**: SCIP `v10.0.2`, SoPlex `v8.0.2`, PaPILO `v3.0.0`
@@ -246,7 +343,9 @@ No R-specific patches needed. Clean upstream tag.
 
 | Branch | Content |
 |--------|---------|
-| `r_pkg` | Current (10.0.2 patches) |
+| `r_pkg-10.1.0` / `r_pkg-8.1.0` / `r_pkg-3.0.2` | 10.1.0 upgrade (10 scip / 4 soplex / 0 papilo), unmerged |
+| `fix-libcxx23-transitive-includes` | Released 1.10.0-4 state (9 scip / 5 soplex) |
+| `r_pkg` | 10.0.2 patches minus the libc++ 23 commit (8 scip / 4 soplex) |
 | `r_pkg_v1` | Old 10.0.1 patches (9 scip / 5 soplex) |
 
 Main repo tag `pre-10.0.2` points to the last commit before the upgrade.
