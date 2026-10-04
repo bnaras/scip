@@ -3,7 +3,6 @@
 ^CLAUDE\.md$
 ^\.claude$
 ^cran-comments\.md$
-^cerr_to_r_error_strategy\.md$
 ^inst/plan$
 # ── Git/CI metadata in submodules (including nested) ──
 ^inst/scip/\.git
@@ -67,7 +66,6 @@
 ^00install\.out$
 ^2026-.*\.txt$
 ^00check\.log$
-^tools/cmake_args\.sh$
 ^scip-.*\.tgz$
 ^scip_.*\.tar\.gz$
 ^TODO\.md$

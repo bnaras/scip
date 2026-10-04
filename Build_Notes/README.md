@@ -3,18 +3,20 @@
 ## Submodule / Branch Architecture
 
 The R package vendors three upstream libraries as git submodules, each
-pointing to our forks. Our forks maintain an `r_pkg` branch containing
-R-specific patches on top of the upstream release tag:
+pointing to our forks. Each fork carries a branch of R-specific patches
+on top of the upstream release tag, one branch per upstream version:
 
-| Submodule | Upstream | Our fork | Branch |
-|-----------|----------|----------|--------|
-| `inst/scip` | [scipopt/scip](https://github.com/scipopt/scip) | [bnaras/scip-src](https://github.com/bnaras/scip-src) | `r_pkg` |
-| `inst/soplex` | [scipopt/soplex](https://github.com/scipopt/soplex) | [bnaras/soplex-src](https://github.com/bnaras/soplex-src) | `r_pkg` |
-| `src/papilo` | [scipopt/papilo](https://github.com/scipopt/papilo) | [bnaras/papilo-src](https://github.com/bnaras/papilo-src) | `r_pkg` |
+| Submodule | Upstream | Our fork | Current branch |
+|-----------|----------|----------|----------------|
+| `inst/scip` | [scipopt/scip](https://github.com/scipopt/scip) | [bnaras/scip-src](https://github.com/bnaras/scip-src) | `r_pkg-10.1.0` |
+| `inst/soplex` | [scipopt/soplex](https://github.com/scipopt/soplex) | [bnaras/soplex-src](https://github.com/bnaras/soplex-src) | `r_pkg-8.1.0` |
+| `src/papilo` | [scipopt/papilo](https://github.com/scipopt/papilo) | [bnaras/papilo-src](https://github.com/bnaras/papilo-src) | `r_pkg-3.0.2` |
 
-The `.gitmodules` file specifies `branch = r_pkg` for all three.
-The main R package always points its submodules at the `r_pkg` branch
-tip of our forks.
+PaPILO is not compiled (`PAPILO:bool=OFF`) and its fork carries no
+patches; the submodule is kept so the tree matches upstream's layout.
+`.gitmodules` still says `branch = r_pkg`; the parent repo pins exact
+commits, so this only affects `git submodule update --remote`. Older
+branches are listed under "Fallback branches" at the end.
 
 ## Why patches are needed
 
@@ -43,60 +45,66 @@ printf calls. macOS builds give false confidence.
 
 ## Workflow for upgrading to a new upstream release
 
-1. **Create a feature branch** on the main R package:
-   ```
-   cd ~/GitHub/scip && git checkout -b upgrade/scip-X.Y.Z
-   ```
+This is the procedure as actually run for 10.0.2 → 10.1.0. Everything
+happens on new branches; nothing on `main` or an existing `r_pkg-*`
+branch is rewritten.
 
-2. **For each submodule fork** (scip-src, soplex-src, papilo-src):
+1. **Branch the R package**: `git checkout -b upgrade/scip-X.Y.Z` from
+   the commit that is on CRAN.
+
+2. **Export the current patch series** from each fork as a safety net
+   and as the input to the next step:
    ```
-   cd inst/scip   # (or inst/soplex, src/papilo)
+   cd inst/scip      # likewise inst/soplex
    git fetch upstream --tags
-   git checkout master && git reset --hard vX.Y.Z
+   git format-patch vOLD..r_pkg-OLD -o <somewhere outside the repo>/scip-src/
    ```
+   The exported `.patch` files are also kept with the release notes
+   (for 10.1.0: `new_design/issues/scip_10.1.0/patches/`).
 
-3. **Export current R patches** before rebasing (safety net):
+3. **Start a new branch from the new upstream tag** and re-apply in
+   order (the `r_streams.h` include patch is first in the series):
    ```
-   git format-patch master..r_pkg -o ~/patches/scip-src/
+   git checkout -b r_pkg-NEW vNEW
+   git am --3way <patches>/*.patch
    ```
+   Resolve conflicts, drop patches upstream has absorbed (`git am`
+   says "Patch already applied"), and note both in this file.
 
-4. **Start a fresh `r_pkg` from the new tag** and apply patches:
-   ```
-   git checkout -b r_pkg master
-   git am --3way ~/patches/scip-src/0005-*.patch   # r_streams.h first
-   git am --3way ~/patches/scip-src/0001-*.patch   # then the rest
-   # ... resolve conflicts, skip dead patches
-   ```
-
-5. **Check for NEW bare printf calls** added by the upstream release:
+4. **Differential grep for new bare stdio/exit calls.** Grep the fresh
+   tag and the patched old branch with the same pattern and take the set
+   difference, so only sites *new* in this release show:
    ```
    grep -rn '[^a-zA-Z_]printf\s*(' src/ --include='*.c' --include='*.cpp' \
      | grep -v '//.*printf' \
      | grep -v 'Rprintf\|snprintf\|sprintf\|fprintf\|vprintf' \
      | grep -v '#define\|while.*FALSE'
    ```
-   Pay special attention to `src/tpi/tpi_openmp.c` — only compiled
-   with TPI=omp on Linux, invisible on macOS.
+   Pay special attention to `src/tpi/tpi_openmp.c`, compiled only with
+   TPI=omp on Linux and therefore invisible on macOS.
 
-6. **Find the exact offending object** on Linux if `R CMD check` still
-   shows `__printf_chk` or similar:
+5. **Point the submodules at the new tips, build, test, check** from
+   the R package. Gate on the **tarball**, never on an in-tree install:
+   `.Rbuildignore` strips directories the tarball build has to survive
+   without (the 10.1.0 `doc/` break was invisible in-tree).
    ```
-   nm -A /path/to/sciplib/lib/libscip.a | grep '__printf_chk'
+   R CMD build scip && R CMD check --as-cran scip_*.tar.gz
    ```
-   This tells you exactly which `.o` file to fix.
+   `checking compiled code ... OK` is the gate that matters. Run it on
+   macOS **and** on Linux with TPI=omp; the CRAN clang-23/libc++ clone in
+   `new_design/issues/c++23/` (`check_pkg.sh check <tarball>`) is the
+   Linux gate. If it reports `__printf_chk` or similar:
+   ```
+   nm -A src/sciplib/lib/libscip.a | grep '__printf_chk'
+   ```
+   names the object file to fix.
 
-7. **Build and check** from the main R package:
-   ```
-   cd ~/GitHub && R CMD build scip && R CMD check scip_*.tar.gz --no-manual
-   ```
-   The key check is `checking compiled code ...` — it must show OK,
-   not WARNING or NOTE. **Test on both macOS AND Linux.**
+6. **Push the branches, open a PR against `main`** so CI runs on all
+   five platforms. Merge, fast-forward `main`, and move `r_pkg` only
+   after CRAN has accepted the release.
 
-8. **Once clean**, rename branch to `r_pkg`, force-push, update
-   submodule pointers, commit on the main R package.
-
-9. **Document** which patches were applied, which were dropped, and
-   why, in this file.
+7. **Document** in this file: tags, branches, patches applied/dropped
+   and why, anything that broke, and the verification table.
 
 ## Toward eliminating patches: upstream I/O abstraction
 
@@ -261,7 +269,10 @@ changed API functions and no changed parameters; the 44 `SCIP*` calls in
 helpers, solving-phase queries, IIS accessors and a few parameters, none
 used here. Upstream did **not** adopt the libc++ 23 include fixes
 (`basevectors.h` still lacks `<istream>`, `multiprecision.hpp` still lacks
-`<cstdlib>`), so both patches are carried forward.
+`<cstdlib>`), so both patches are carried forward. They were added for
+1.10.0-4 (2026-08-27) when CRAN's `r-devel-linux-x86_64-fedora-clang`
+moved to LLVM 23; the CRAN clone used to reproduce and verify that lives
+in `new_design/issues/c++23/` and is the Linux gate in the workflow above.
 
 **Differential grep for new stdio/exit calls** (step 5 above, run as a set
 difference between the patched 10.0.2 tree and the fresh 10.1.0 tree, so
@@ -351,119 +362,18 @@ SoPlex's build dir for `soplex-config.cmake`).
 | tinytest suite on that install | All ok, 115 results |
 | Emphasis settings observed in SCIP's log | `presolve_emphasis="off"` → 0 presolve rounds (default 3–11); `separating_emphasis="off"` → no cut-pool restarts; `emphasis="cpsolver"` → 640,919 nodes vs 1 (no LP); identical optimum throughout |
 | `R CMD build` + `R CMD check --as-cran` on the tarball, macOS | **Status: OK, 0 NOTEs** (`_R_CHECK_CRAN_INCOMING_REMOTE_=false`); `checking compiled code ... OK`; vignette rebuild OK |
-| CRAN clang-23 / libc++ Linux harness (`new_design/issues/c++23`, Fedora 44 x86_64, clang 23.1.0, R-devel r90448, TPI=omp), `R CMD check --as-cran --no-manual` on the same tarball | **Status: 1 NOTE** — `scipopt.org` HTTP 429 (rate limiting, same as the 1.10.0-4 submission); `checking compiled code ... OK` (the `nm` scan, with `tpi_openmp.c` compiled in); tests OK; vignette rebuild OK; 0 compile errors; 9m42s under Rosetta |
 | `.Rinstignore` change, tarball path: `R CMD build` + `R CMD check --as-cran` | Status: OK; installed size 10.5 MB (unchanged); "GNU extensions in Makefiles" is INFO only (GNU make is a declared SystemRequirement); `inst/doc/scip-examples.{Rmd,R,html}` present in the installed package |
 | `.Rinstignore` change, in-tree path: `R CMD INSTALL --preclean -l <lib> .` from the checkout | installed size **10 MB** (was 257 MB); no `scip/`, `soplex/`, `config/`, `plan/` or `build_scip.sh` in the library; `inst/scip/build` and `inst/soplex/build` removed; `git status` shows only the intended edits |
 | **Final tarball (`4be2c4c`, SHA-256 `90efb790…`) on the clang-23 harness rebuilt with R-devel 2026-10-02 r90634** | **Status: 1 NOTE** (`scipopt.org` 429 only); `checking compiled code ... OK`; GNU extensions in Makefiles INFO only; installed size 10.2 MB; tests OK; vignette OK; 0 compile errors; 9m35s. `verify_harness.sh`: all required components present |
 | win-builder | not run (user) |
 
-### Upgrade 10.0.1 → 10.0.2 (2026-04-06)
-
-**Upstream tags**: SCIP `v10.0.2`, SoPlex `v8.0.2`, PaPILO `v3.0.0`
-
-Clean 10.0.2 sources build and pass tests but fail `R CMD check`
-compiled code checks (stdout/stderr/exit/abort symbols in static libs).
-
-#### Tinycthread patches confirmed dead
-
-With TPI=omp (or TPI=none on macOS), tinycthread is never compiled.
-The bulk of our 10.0.1 patch burden was tinycthread-related
-(prefixing C11 names to avoid glibc C23 collisions, guarding
-includes, etc.). All of this is gone now.
-
-#### scip-src: `bnaras/scip-src` `r_pkg` branch (7 commits on `v10.0.2`)
-
-Commits (in application order):
-
-1. `59a5149` — **Add r_streams.h include for R-compatible output declarations**
-   Applied first since other patches depend on it.
-   Minor conflict in `src/dejavu/utility.h` (upstream changed `<ostream>` to `<iostream>`).
-   Files: `src/dejavu/utility.h`, `src/dejavu/dejavu.cpp`, `src/dejavu/graph.h`,
-   `src/dejavu/bfs.h`, `src/cppad/utility/error_handler.hpp` + 12 more cppad headers,
-   `src/lpi/lpi_clp.cpp`
-
-2. `9acd9b4` — **R compatibility: replace exit/abort/fprintf/sprintf with R equivalents**
-   Bulk replacements in SCIP core C/C++ files.
-   Files: `src/scip/message.c`, `src/scip/message_default.c`, `src/scip/misc.c`,
-   `src/scip/scipshell.c`, `src/scip/rational.cpp`, `src/scip/cons_nonlinear.c`,
-   `src/scip/exprinterpret_cppad.cpp`, `src/xml/xmlparse.c`, `src/nauty/*.c`,
-   `src/tclique/tclique_def.h`, `src/xml/xmldef.h` + others (72 files total)
-
-3. `5be9b93` — **Replace direct stdio/abort calls with R API equivalents**
-   More replacements in `src/blockmemshell/memory.c`, `src/dijkstra/dijkstra.c`,
-   `src/scip/dialog.c`, `src/scip/dialog_default.c`, `src/scip/disp.c`,
-   `src/scip/expr.c`, `src/scip/interrupt.c`, `src/scip/matrix.c`,
-   `src/scip/nlp.c`, `src/scip/nlpioracle.c`, `src/scip/reader_gms.c`,
-   `src/scip/reader_opb.c`, `src/scip/stat.c`, `src/scip/lpi/lpi_spx.cpp`
-
-4. `ba686d0` — **Patch objconshdlr.h: replace fprintf(stdout,...) with Rprintf**
-   File: `src/objscip/objconshdlr.h`
-
-5. `ddbd4a2` — **CRAN compliance: fix warnings in vendored sources**
-   Compiler warning fixes in dejavu, nauty, lpi_spx, rational.cpp.
-   Minor conflict in `src/dejavu/ds.h` and `src/dejavu/utility.h` (resolved).
-   Files: `src/dejavu/ds.h`, `src/dejavu/ir.h`, `src/dejavu/utility.h`,
-   `src/lpi/lpi_spx.cpp`, `src/nauty/nauty.c`, `src/scip/rational.cpp`,
-   `src/scip/pub_message.h`, `src/scip/pub_fileio.h`, `src/scip/scip_message.h`,
-   `src/scip/set.h`, `src/scip/stat.h`, `src/scip/presol_milp.cpp`,
-   `src/scip/certificate.cpp`, `src/scip/reader_zpl.c`,
-   `src/symmetry/compute_symmetry_sassy_nauty.cpp`
-
-6. `f1fb6a9` — **Fix strerror_r variant detection on macOS with _GNU_SOURCE**
-   File: `src/scip/misc.c` (strerror_r portability)
-
-7. `6794840` — **Fix printf in tpi_openmp.c for CRAN compliance** (NEW for 10.0.2)
-   `printf("err1")` → `Rprintf("err1")` + `#include "r_streams.h"`.
-   **This was the Ubuntu `__printf_chk` culprit.** Only compiled when TPI=omp
-   (Linux with OpenMP). Invisible on macOS where TPI=none. Found via
-   `nm -A libscip.a | grep __printf_chk` on the Ubuntu-built archive.
-   File: `src/tpi/tpi_openmp.c`
-
-Not carried forward from 10.0.1 (dead with TPI=omp):
-
-- `0003` — Static `githash.c`. CMake generates this now.
-- `0007` — Prefix tinycthread C11 names. Pure tinycthread fix.
-- `0009` — Guard tinycthread.h includes. Dead; `tpi_openmp.c` fix extracted above.
-
-#### soplex-src: `bnaras/soplex-src` `r_pkg` branch (4 commits on `v8.0.2`)
-
-Commits (in application order):
-
-1. `a726531` — **R compatibility: redirect std::cerr/std::cout through R I/O**
-   Files: `src/soplex/spxout.cpp`, `src/soplex/spxdefines.cpp`,
-   `src/soplex/spxdefines.h`, `src/soplex.hpp`, `src/soplexmain.cpp`,
-   `src/example.cpp`, `src/soplex_interface.cpp` + ~60 header files
-   (replaces `std::cerr`/`std::cout` stream references throughout)
-
-2. `3a7e0b6` — **CRAN compliance: disable fmt string_view, redirect I/O to R**
-   Files: `src/soplex/external/fmt/core.h`, `src/soplex/external/fmt/format.h`,
-   `src/soplex/spxout.cpp` (major R I/O redirection additions)
-
-3. `574bd9b` — **Add r_streams.h include for R-compatible output declarations**
-   Files: `src/soplex/didxset.cpp`, `src/soplex/idxset.cpp`,
-   `src/soplex/nameset.cpp`, `src/soplex/spxdefines.cpp`
-
-4. `624a418` — **Fix deprecated literal operator spacing in fmt/format.h**
-   Upstream did not fix this in 8.0.2.
-   File: `src/soplex/external/fmt/format.h`
-
-Not carried forward from 10.0.1:
-
-- `0003` — Static `git_hash.cpp`. CMake generates this now.
-
-#### papilo-src: `bnaras/papilo-src` `r_pkg` branch (0 commits on `v3.0.0`)
-
-No R-specific patches needed. Clean upstream tag.
-
 ### Fallback branches
 
-| Branch | Content |
-|--------|---------|
-| `r_pkg-10.1.0` / `r_pkg-8.1.0` / `r_pkg-3.0.2` | 10.1.0 upgrade (10 scip / 4 soplex / 0 papilo), unmerged |
-| `fix-libcxx23-transitive-includes` | Released 1.10.0-4 state (9 scip / 5 soplex) |
-| `r_pkg` | 10.0.2 patches minus the libc++ 23 commit (8 scip / 4 soplex) |
-| `r_pkg_v1` | Old 10.0.1 patches (9 scip / 5 soplex) |
+| Branch (in each fork) | Content |
+|-----------------------|---------|
+| `r_pkg-10.1.0` / `r_pkg-8.1.0` / `r_pkg-3.0.2` | This upgrade (10 scip / 4 soplex / 0 papilo), unmerged |
+| `fix-libcxx23-transitive-includes` | The state on CRAN as 1.10.0-4 (9 scip / 5 soplex) |
 
-Main repo tag `pre-10.0.2` points to the last commit before the upgrade.
-To recover old patches: `git format-patch master..r_pkg_v1` from within
-any submodule.
+Older branches (`r_pkg`, `r_pkg_v1`) and the parent tag `pre-10.0.2`
+predate the libc++ 23 fix and the 10.1.0 upgrade; the earlier patch
+history is in `git log` on those branches and in `NEWS.md`.
