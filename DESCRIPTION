@@ -1,6 +1,6 @@
 Package: scip
 Title: Interface to the SCIP Optimization Suite
-Version: 1.10.0-3
+Version: 1.10.1-1
 Authors@R: c(
     person("Balasubramanian", "Narasimhan", email = "naras@stanford.edu",
            role = c("aut", "cre"),
@@ -29,5 +29,5 @@ VignetteBuilder: knitr
 SystemRequirements: CMake (>= 3.11), GNU make, C++17
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.3.3
 NeedsCompilation: yes
+Config/roxygen2/version: 8.1.0

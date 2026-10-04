@@ -1,3 +1,31 @@
+# scip 1.10.1-1
+
+- Upgrade the bundled solvers to the SCIP Optimization Suite 10.1.0
+  (released 2026-09-18): SCIP 10.1.0, SoPlex 8.1.0, PaPILO 3.0.2.
+- New `scip_control()` arguments `presolve_emphasis` and
+  `separating_emphasis`, taking `"default"`, `"aggressive"`, `"fast"`,
+  or `"off"` exactly like the existing `heuristics_emphasis`. They map
+  to SCIP's `SCIPsetPresolving()` and `SCIPsetSeparating()`
+  meta-settings, which adjust whole families of parameters at once and
+  cannot be reproduced through individual parameters (#2).
+- New `scip_control()` argument `emphasis` exposing SCIP's global
+  parameter profiles (`SCIPsetEmphasis()`): `"feasibility"`,
+  `"optimality"`, `"hardlp"`, `"numerics"`, `"easycip"`, `"cpsolver"`,
+  `"counter"`, `"phasefeas"`, `"phaseimprove"`, `"phaseproof"`,
+  `"benchmark"`. All emphasis settings are applied before individual
+  parameters, so a native parameter passed via `...` still wins.
+- Installing from a source checkout is now more efficient.
+
+# scip 1.10.0-4
+
+- Fix compilation with LLVM 23's libc++, reported by CRAN's
+  `r-devel-linux-x86_64-fedora-clang` check. libc++ 23 dropped many
+  transitive includes in all language modes, exposing three headers that
+  relied on them: `<istream>` in SoPlex's `basevectors.h` and
+  `mpsinput.cpp`, and `<cstdlib>` in SCIP's `multiprecision.hpp`. Because
+  `basevectors.h` is reached from `soplex.h`, the first of these broke
+  every translation unit including SoPlex. No user-visible change.
+
 # scip 1.10.0-3
 
 - Upgrade to SCIP 10.0.2, SoPlex 8.0.2, PaPILO 3.0.0.

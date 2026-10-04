@@ -603,6 +603,51 @@ SEXP R_scip_model_free(SEXP ext) {
 }
 
 /* =====================================================================
+ * Emphasis meta-settings
+ * ===================================================================== */
+
+/*
+ * Map an R-level component emphasis string ("aggressive", "fast", "off")
+ * to a SCIP_PARAMSETTING. The R layer validates with match.arg() and only
+ * forwards non-default values, so an unknown string cannot reach here;
+ * it maps to DEFAULT as a safe fallback.
+ */
+static SCIP_PARAMSETTING parse_paramsetting(const char *s) {
+    if (strcmp(s, "aggressive") == 0) return SCIP_PARAMSETTING_AGGRESSIVE;
+    if (strcmp(s, "fast") == 0)       return SCIP_PARAMSETTING_FAST;
+    if (strcmp(s, "off") == 0)        return SCIP_PARAMSETTING_OFF;
+    return SCIP_PARAMSETTING_DEFAULT;
+}
+
+/*
+ * Map an R-level global emphasis string to a SCIP_PARAMEMPHASIS
+ * (the argument of SCIPsetEmphasis). Same validation contract as above.
+ */
+static SCIP_PARAMEMPHASIS parse_paramemphasis(const char *s) {
+    static const struct {
+        const char *name;
+        SCIP_PARAMEMPHASIS value;
+    } table[] = {
+        { "cpsolver",     SCIP_PARAMEMPHASIS_CPSOLVER     },
+        { "easycip",      SCIP_PARAMEMPHASIS_EASYCIP      },
+        { "feasibility",  SCIP_PARAMEMPHASIS_FEASIBILITY  },
+        { "hardlp",       SCIP_PARAMEMPHASIS_HARDLP       },
+        { "optimality",   SCIP_PARAMEMPHASIS_OPTIMALITY   },
+        { "counter",      SCIP_PARAMEMPHASIS_COUNTER      },
+        { "phasefeas",    SCIP_PARAMEMPHASIS_PHASEFEAS    },
+        { "phaseimprove", SCIP_PARAMEMPHASIS_PHASEIMPROVE },
+        { "phaseproof",   SCIP_PARAMEMPHASIS_PHASEPROOF   },
+        { "numerics",     SCIP_PARAMEMPHASIS_NUMERICS     },
+        { "benchmark",    SCIP_PARAMEMPHASIS_BENCHMARK    }
+    };
+    size_t i;
+    for (i = 0; i < sizeof(table) / sizeof(table[0]); i++) {
+        if (strcmp(s, table[i].name) == 0) return table[i].value;
+    }
+    return SCIP_PARAMEMPHASIS_DEFAULT;
+}
+
+/* =====================================================================
  * One-shot solver (Layer 1)
  * ===================================================================== */
 
@@ -650,19 +695,37 @@ SEXP R_scip_solve(SEXP obj, SEXP Ai, SEXP Ap, SEXP Ax,
 
     /* Apply control parameters from the scip_control structure.
      * The R layer produces: list(verbose=T/F, scip_params=list(...),
-     *   heuristics_emphasis=...) */
+     *   emphasis=..., presolve_emphasis=..., heuristics_emphasis=...,
+     *   separating_emphasis=...), the emphasis entries present only
+     *   when non-default.
+     *
+     * The emphasis meta-settings must be applied BEFORE the individual
+     * parameters, so that an explicit scip_params entry overrides them.
+     * The global emphasis goes first because SCIPsetEmphasis touches
+     * presolving, heuristics and separating parameters itself. */
 
-    /* Handle heuristics emphasis (must be set before individual params) */
+    SEXP gem = getListElement(ctrl, "emphasis");
+    if (gem != R_NilValue) {
+        SCIP_CALL_R(SCIPsetEmphasis(scip,
+            parse_paramemphasis(CHAR(STRING_ELT(gem, 0))), TRUE));
+    }
+
+    SEXP pem = getListElement(ctrl, "presolve_emphasis");
+    if (pem != R_NilValue) {
+        SCIP_CALL_R(SCIPsetPresolving(scip,
+            parse_paramsetting(CHAR(STRING_ELT(pem, 0))), TRUE));
+    }
+
     SEXP hem = getListElement(ctrl, "heuristics_emphasis");
     if (hem != R_NilValue) {
-        const char *emphasis = CHAR(STRING_ELT(hem, 0));
-        if (strcmp(emphasis, "aggressive") == 0) {
-            SCIP_CALL_R(SCIPsetHeuristics(scip, SCIP_PARAMSETTING_AGGRESSIVE, TRUE));
-        } else if (strcmp(emphasis, "fast") == 0) {
-            SCIP_CALL_R(SCIPsetHeuristics(scip, SCIP_PARAMSETTING_FAST, TRUE));
-        } else if (strcmp(emphasis, "off") == 0) {
-            SCIP_CALL_R(SCIPsetHeuristics(scip, SCIP_PARAMSETTING_OFF, TRUE));
-        }
+        SCIP_CALL_R(SCIPsetHeuristics(scip,
+            parse_paramsetting(CHAR(STRING_ELT(hem, 0))), TRUE));
+    }
+
+    SEXP sem = getListElement(ctrl, "separating_emphasis");
+    if (sem != R_NilValue) {
+        SCIP_CALL_R(SCIPsetSeparating(scip,
+            parse_paramsetting(CHAR(STRING_ELT(sem, 0))), TRUE));
     }
 
     /* Apply all native SCIP parameters from scip_params list */
