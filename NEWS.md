@@ -1,7 +1,7 @@
 # scip 1.10.1-1
 
 - Upgrade the bundled solvers to the SCIP Optimization Suite 10.1.0
-  (released 2026-09-18): SCIP 10.1.0, SoPlex 8.1.0, PaPILO 3.0.2. 
+  (released 2026-09-18): SCIP 10.1.0, SoPlex 8.1.0, PaPILO 3.0.2.
 - New `scip_control()` arguments `presolve_emphasis` and
   `separating_emphasis`, taking `"default"`, `"aggressive"`, `"fast"`,
   or `"off"` exactly like the existing `heuristics_emphasis`. They map
@@ -14,7 +14,7 @@
   `"counter"`, `"phasefeas"`, `"phaseimprove"`, `"phaseproof"`,
   `"benchmark"`. All emphasis settings are applied before individual
   parameters, so a native parameter passed via `...` still wins.
-- Installing from a source checkout now more efficient.
+- Installing from a source checkout is now more efficient.
 
 # scip 1.10.0-4
 
