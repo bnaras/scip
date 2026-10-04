@@ -365,7 +365,8 @@ SoPlex's build dir for `soplex-config.cmake`).
 | `.Rinstignore` change, tarball path: `R CMD build` + `R CMD check --as-cran` | Status: OK; installed size 10.5 MB (unchanged); "GNU extensions in Makefiles" is INFO only (GNU make is a declared SystemRequirement); `inst/doc/scip-examples.{Rmd,R,html}` present in the installed package |
 | `.Rinstignore` change, in-tree path: `R CMD INSTALL --preclean -l <lib> .` from the checkout | installed size **10 MB** (was 257 MB); no `scip/`, `soplex/`, `config/`, `plan/` or `build_scip.sh` in the library; `inst/scip/build` and `inst/soplex/build` removed; `git status` shows only the intended edits |
 | **Final tarball (`4be2c4c`, SHA-256 `90efb790…`) on the clang-23 harness rebuilt with R-devel 2026-10-02 r90634** | **Status: 1 NOTE** (`scipopt.org` 429 only); `checking compiled code ... OK`; GNU extensions in Makefiles INFO only; installed size 10.2 MB; tests OK; vignette OK; 0 compile errors; 9m35s. `verify_harness.sh`: all required components present |
-| win-builder | not run (user) |
+| win-builder, R-devel and R-release, on the `48ff8bb` tarball | passed (user, 2026-10-04) |
+| Downstream gate: the 13 CVXR 1.9.2 (CRAN) test files that mention SCIP, run with the `48ff8bb` tarball installed in a throwaway library ahead of the system scip (ordering asserted in-process) | 1308 pass / 0 fail / 0 error / 10 skip; `test-scip-solver.R` 39 pass, 0 skip |
 
 ### Fallback branches
 
