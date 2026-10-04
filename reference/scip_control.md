@@ -2,8 +2,8 @@
 
 Create a list of control parameters for the SCIP solver. Parameters are
 organized into logical groups: output, limits, tolerances, presolving,
-LP, branching, and heuristics. Any SCIP parameter can also be set
-directly using its native path via `...`.
+LP, branching, heuristics, separating, and emphasis. Any SCIP parameter
+can also be set directly using its native path via `...`.
 
 ## Usage
 
@@ -26,11 +26,14 @@ scip_control(
   epsilon = 1e-09,
   presolving = TRUE,
   presolve_rounds = -1L,
+  presolve_emphasis = "default",
   lp_threads = 1L,
   lp_iteration_limit = -1L,
   lp_scaling = TRUE,
   branching_score = "p",
   heuristics_emphasis = "default",
+  separating_emphasis = "default",
+  emphasis = "default",
   threads = 1L,
   ...
 )
@@ -106,6 +109,10 @@ scip_control(
 
   Integer; presolve rounds. Default `-1L`.
 
+- presolve_emphasis:
+
+  Character; presolving emphasis. Default `"default"`.
+
 - lp_threads:
 
   Integer; LP solver threads. Default `1L`.
@@ -125,6 +132,15 @@ scip_control(
 - heuristics_emphasis:
 
   Character; heuristic emphasis. Default `"default"`.
+
+- separating_emphasis:
+
+  Character; separating emphasis. Default `"default"`.
+
+- emphasis:
+
+  Character; global solver emphasis. Default `"default"`. See the
+  Emphasis section.
 
 - threads:
 
@@ -150,6 +166,17 @@ A named list of class `"scip_control"` with components:
 - `scip_params`:
 
   Named list; all parameters as SCIP native paths.
+
+## Details
+
+The four emphasis arguments (`emphasis`, `presolve_emphasis`,
+`heuristics_emphasis`, `separating_emphasis`) are SCIP meta-settings:
+each one adjusts a whole family of native parameters at once, the same
+way SCIP's interactive shell commands `set emphasis`,
+`set presolving emphasis`, `set heuristics emphasis` and
+`set separating emphasis` do. They are applied before any individual
+parameter, in that order, so a native parameter given via `...` always
+overrides whatever the emphasis chose for it.
 
 ## Output
 
@@ -235,6 +262,11 @@ A named list of class `"scip_control"` with components:
 
   Integer; maximum presolving rounds (`-1` = unlimited). Default `-1L`.
 
+- `presolve_emphasis`:
+
+  Character; presolving emphasis setting: `"default"`, `"aggressive"`,
+  `"fast"`, or `"off"`. Default `"default"`.
+
 ## LP
 
 - `lp_threads`:
@@ -264,6 +296,28 @@ A named list of class `"scip_control"` with components:
   Character; heuristic emphasis setting: `"default"`, `"aggressive"`,
   `"fast"`, or `"off"`. Default `"default"`.
 
+## Separating
+
+- `separating_emphasis`:
+
+  Character; cutting-plane separation emphasis setting: `"default"`,
+  `"aggressive"`, `"fast"`, or `"off"`. Default `"default"`.
+
+## Emphasis
+
+- `emphasis`:
+
+  Character; global solver emphasis, choosing a predefined parameter
+  profile for a problem class or solving goal. One of `"default"`,
+  `"cpsolver"` (constraint-programming style search, no LP relaxation),
+  `"easycip"` (solve easy problems fast), `"feasibility"` (find a
+  feasible solution fast), `"hardlp"` (cope with hard LP relaxations),
+  `"optimality"` (prove optimality fast), `"counter"` (solution
+  counting), `"phasefeas"`, `"phaseimprove"`, `"phaseproof"` (the three
+  phases of SCIP's three-phase approach), `"numerics"` (increased
+  numerical safety), or `"benchmark"` (do not try to avoid the memory
+  limit). Default `"default"`.
+
 ## Parallel
 
 - `threads`:
@@ -287,6 +341,13 @@ ctrl <- scip_control(verbose = FALSE, gap_limit = 0.01)
 
 ## Aggressive heuristics, no presolving
 ctrl <- scip_control(heuristics_emphasis = "aggressive", presolving = FALSE)
+
+## Aggressive presolving and separation, as for hard combinatorial MIPs
+ctrl <- scip_control(presolve_emphasis = "aggressive",
+                     separating_emphasis = "aggressive")
+
+## Global profile: find a feasible solution quickly
+ctrl <- scip_control(emphasis = "feasibility")
 
 ## Pass a native SCIP parameter directly
 ctrl <- scip_control("conflict/enable" = FALSE, "separating/maxrounds" = 5L)

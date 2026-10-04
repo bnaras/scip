@@ -1,17 +1,19 @@
-# scip: R Interface to the SCIP Optimization Suite
+# scip: Interface to the SCIP Optimization Suite
 
 Provides an R interface to SCIP (Solving Constraint Integer Programs), a
 framework for mixed-integer programming (MIP), mixed-integer nonlinear
-programming (MINLP), and constraint integer programming. Supports
-linear, quadratic, SOS, indicator, and knapsack constraints with
-continuous, binary, and integer variables. Includes a one-shot solver
-interface and a model-building API for incremental problem construction.
+programming (MINLP), and constraint integer programming (2025,
+[doi:10.48550/arXiv.2511.18580](https://doi.org/10.48550/arXiv.2511.18580)
+). Supports linear, quadratic, SOS, indicator, and knapsack constraints
+with continuous, binary, and integer variables. Includes a one-shot
+solver interface and a model-building API for incremental problem
+construction.
 
 ## See also
 
 Useful links:
 
-- <https://github.com/bnaras/scip>
+- <https://bnaras.github.io/scip/>
 
 - <https://scipopt.org/>
 
@@ -21,6 +23,11 @@ Useful links:
 
 **Maintainer**: Balasubramanian Narasimhan <naras@stanford.edu>
 ([ORCID](https://orcid.org/0000-0001-5852-7639))
+
+Authors:
+
+- Balasubramanian Narasimhan <naras@stanford.edu>
+  ([ORCID](https://orcid.org/0000-0001-5852-7639))
 
 Other contributors:
 

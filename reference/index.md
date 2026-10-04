@@ -2,7 +2,7 @@
 
 ## Package
 
-- [`scip`](scip-package.md) [`scip-package`](scip-package.md) : scip: R
+- [`scip`](scip-package.md) [`scip-package`](scip-package.md) : scip:
   Interface to the SCIP Optimization Suite
 
 ## One-Shot Solver

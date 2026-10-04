@@ -14,12 +14,14 @@ of the solver.
 Install the released version from CRAN:
 
 ``` r
+
 install.packages("scip")
 ```
 
 Or install the development version from GitHub:
 
 ``` r
+
 # install.packages("pak")
 pak::pak("bnaras/scip")
 ```

@@ -29,10 +29,22 @@ limited by labour (6 hours available) and materials (8 kg available).
 Product 1 requires 1 hour and 2 kg per unit; Product 2 requires 2 hours
 and 1 kg per unit.
 
-$$\max\; 5x_{1} + 4x_{2}$$ subject to:
-$$x_{1} + 2x_{2} \leq 6\quad\text{(labour)}$$$$2x_{1} + x_{2} \leq 8\quad\text{(materials)}$$$$x_{1},x_{2} \geq 0$$
+``` math
+\max\; 5x_1 + 4x_2
+```
+subject to:
+``` math
+x_1 + 2x_2 \le 6 \quad\text{(labour)}
+```
+``` math
+2x_1 + x_2 \le 8 \quad\text{(materials)}
+```
+``` math
+x_1, x_2 \ge 0
+```
 
 ``` r
+
 A <- matrix(c(1, 2,
               2, 1), nrow = 2, byrow = TRUE)
 b <- c(6, 8)
@@ -57,10 +69,19 @@ A hiker can carry at most 13 kg. Six items are available with weights 7,
 2, 7, 5, 1, and 3 kg, each with equal value. Which items should the
 hiker pack to carry as many as possible?
 
-$$\max\;\sum\limits_{i = 1}^{6}x_{i}$$ subject to:
-$$7x_{1} + 2x_{2} + 7x_{3} + 5x_{4} + x_{5} + 3x_{6} \leq 13$$$$x_{i} \in \{ 0,1\}$$
+``` math
+\max\; \sum_{i=1}^{6} x_i
+```
+subject to:
+``` math
+7x_1 + 2x_2 + 7x_3 + 5x_4 + x_5 + 3x_6 \le 13
+```
+``` math
+x_i \in \{0,1\}
+```
 
 ``` r
+
 A <- matrix(c(7, 2, 7, 5, 1, 3), nrow = 1)
 res <- scip_solve(obj = c(-1, -1, -1, -1, -1, -1),
                   A = A, b = 13, sense = "<=",
@@ -81,19 +102,20 @@ total_weight
 *Adapted from SCIP’s Queens example (`examples/Queens/src/queens.cpp`,
 Cornelius Schwarz, University of Bayreuth).*
 
-Place $n$ queens on an $n \times n$ chessboard so that no two queens
+Place $`n`$ queens on an $`n \times n`$ chessboard so that no two queens
 attack each other. This classic combinatorial problem is naturally
 modelled as a binary integer program.
 
-Let $x_{i,j} \in \{ 0,1\}$ indicate whether a queen is placed at row
-$i$, column $j$. The constraints are:
+Let $`x_{i,j} \in \{0,1\}`$ indicate whether a queen is placed at row
+$`i`$, column $`j`$. The constraints are:
 
-- **Rows**: exactly one queen per row, $\sum_{j}x_{i,j} = 1$
-- **Columns**: exactly one queen per column, $\sum_{i}x_{i,j} = 1$
+- **Rows**: exactly one queen per row, $`\sum_j x_{i,j} = 1`$
+- **Columns**: exactly one queen per column, $`\sum_i x_{i,j} = 1`$
 - **Diagonals**: at most one queen per diagonal,
-  $\sum_{{(i,j)} \in D}x_{i,j} \leq 1$
+  $`\sum_{(i,j)\in D} x_{i,j} \le 1`$
 
 ``` r
+
 solve_nqueens <- function(n) {
     m <- scip_model(paste0(n, "-queens"))
     scip_set_objective_sense(m, "maximize")
@@ -153,6 +175,7 @@ solve_nqueens <- function(n) {
 ```
 
 ``` r
+
 result <- solve_nqueens(8)
 result$status
 #> [1] "optimal"
@@ -173,6 +196,7 @@ result$positions
 Visualize the board (`.` = empty, `Q` = queen):
 
 ``` r
+
 board_str <- apply(result$board, 1, function(row) {
     paste(ifelse(row == 1, "Q", "."), collapse = " ")
 })
@@ -193,26 +217,26 @@ cat(board_str, sep = "\n")
 (`examples/CallableLibrary/src/circlepacking.c`, Jose Salmeron and
 Stefan Vigerske, Zuse Institute Berlin).*
 
-Pack $n$ circles with given radii into a rectangle of minimum area. For
-each circle $i$ with radius $r_{i}$, find center coordinates
-$\left( x_{i},y_{i} \right)$. The rectangle has width $W$ and height
-$H$.
+Pack $`n`$ circles with given radii into a rectangle of minimum area.
+For each circle $`i`$ with radius $`r_i`$, find center coordinates
+$`(x_i,
+y_i)`$. The rectangle has width $`W`$ and height $`H`$.
 
 **Constraints:**
 
-- Circles stay within the rectangle: $r_{i} \leq x_{i} \leq W - r_{i}$
-  and $r_{i} \leq y_{i} \leq H - r_{i}$
+- Circles stay within the rectangle: $`r_i \le x_i \le W - r_i`$ and
+  $`r_i \le y_i \le H - r_i`$
 - Circles do not overlap:
-  $\left( x_{i} - x_{j} \right)^{2} + \left( y_{i} - y_{j} \right)^{2} \geq \left( r_{i} + r_{j} \right)^{2}$
-  for all $i < j$
+  $`(x_i - x_j)^2 + (y_i - y_j)^2 \ge (r_i + r_j)^2`$ for all $`i < j`$
 
-**Objective:** Minimize $W \times H$ (area).
+**Objective:** Minimize $`W \times H`$ (area).
 
 Since bilinear objectives are harder to handle, we use a simpler
-approach: minimize $W + H$ as a proxy and fix one dimension. Here we
+approach: minimize $`W + H`$ as a proxy and fix one dimension. Here we
 minimize the width given a fixed height, packing 3 circles.
 
 ``` r
+
 radii <- c(1.0, 1.5, 0.8)
 n <- length(radii)
 H <- 5.0  # fixed height
@@ -272,16 +296,28 @@ for (i in seq_len(n)) {
 *Adapted from SCIP’s SCFLP example
 (`examples/SCFLP/doc/xternal_scflp.c`, Zuse Institute Berlin).*
 
-A company must decide which of $p$ potential warehouse locations to
-open. Each warehouse $i$ has a fixed opening cost $f_{i}$ and a capacity
-$k_{i}$. Each of $q$ customers $j$ has a demand $d_{j}$ and a per-unit
-shipping cost $c_{ij}$ from warehouse $i$. Minimize total cost.
+A company must decide which of $`p`$ potential warehouse locations to
+open. Each warehouse $`i`$ has a fixed opening cost $`f_i`$ and a
+capacity $`k_i`$. Each of $`q`$ customers $`j`$ has a demand $`d_j`$ and
+a per-unit shipping cost $`c_{ij}`$ from warehouse $`i`$. Minimize total
+cost.
 
-$$\min\;\sum\limits_{i}f_{i}y_{i} + \sum\limits_{i,j}c_{ij}x_{ij}$$
+``` math
+\min\; \sum_i f_i y_i + \sum_{i,j} c_{ij} x_{ij}
+```
 subject to:
-$$\sum\limits_{i}x_{ij} \geq d_{j}\quad\forall j\quad\text{(demand)}$$$$\sum\limits_{j}x_{ij} \leq k_{i}\, y_{i}\quad\forall i\quad\text{(capacity)}$$$$y_{i} \in \{ 0,1\},\; x_{ij} \geq 0$$
+``` math
+\sum_i x_{ij} \ge d_j \quad\forall j \quad\text{(demand)}
+```
+``` math
+\sum_j x_{ij} \le k_i\, y_i \quad\forall i \quad\text{(capacity)}
+```
+``` math
+y_i \in \{0,1\},\; x_{ij} \ge 0
+```
 
 ``` r
+
 ## Problem data
 p <- 3  # warehouses
 q <- 4  # customers
@@ -364,19 +400,31 @@ is 1, then a linear constraint must hold.” They are widely used in
 scheduling, network design, and disjunctive programming.
 
 Here we model a simple production problem with setup costs: a machine
-must be “turned on” ($z_{i} = 1$) before it can produce. Turning on a
-machine costs \$50. Each unit produced on machine $i$ earns revenue
-$r_{i}$. Machine $i$ can produce at most $u_{i}$ units, but only if
+must be “turned on” ($`z_i = 1`$) before it can produce. Turning on a
+machine costs \$50. Each unit produced on machine $`i`$ earns revenue
+$`r_i`$. Machine $`i`$ can produce at most $`u_i`$ units, but only if
 turned on.
 
-$$\max\;\sum\limits_{i}\left( r_{i}x_{i} - 50z_{i} \right)$$ subject to:
-$$\left. z_{i} = 1\Longrightarrow x_{i} \leq u_{i}\quad\text{(capacity when on)} \right.$$$$\left. z_{i} = 0\Longrightarrow x_{i} = 0\quad\text{(nothing when off)} \right.$$$$x_{i} \geq 0,\; z_{i} \in \{ 0,1\}$$
+``` math
+\max\; \sum_i (r_i x_i - 50 z_i)
+```
+subject to:
+``` math
+z_i = 1 \implies x_i \le u_i \quad \text{(capacity when on)}
+```
+``` math
+z_i = 0 \implies x_i = 0 \quad \text{(nothing when off)}
+```
+``` math
+x_i \ge 0,\; z_i \in \{0,1\}
+```
 
-We model $\left. z_{i} = 0\Longrightarrow x_{i} \leq 0 \right.$ as an
-indicator constraint on the negated variable. Equivalently, we add the
-big-M constraint $x_{i} \leq u_{i}z_{i}$.
+We model $`z_i = 0 \implies x_i \le 0`$ as an indicator constraint on
+the negated variable. Equivalently, we add the big-M constraint
+$`x_i \le u_i z_i`$.
 
 ``` r
+
 revenue <- c(12, 8, 15)
 max_prod <- c(10, 20, 8)
 setup_cost <- 50
@@ -419,11 +467,25 @@ for (i in 1:3) {
 
 Use [`scip_control()`](../reference/scip_control.md) with the one-shot
 interface, or [`scip_set_param()`](../reference/scip_set_param.md) with
-the model-building interface, to tune solver behavior.
+the model-building interface, to tune solver behavior. Besides
+individual parameters, [`scip_control()`](../reference/scip_control.md)
+exposes SCIP’s emphasis meta-settings, which adjust whole families of
+parameters at once: `presolve_emphasis`, `heuristics_emphasis` and
+`separating_emphasis` (`"aggressive"`, `"fast"`, `"off"`), and the
+global `emphasis` (`"feasibility"`, `"optimality"`, `"hardlp"`,
+`"numerics"`, …). They are applied before any individual parameter, so
+an explicit setting always wins.
 
 ``` r
+
 ## One-shot: time limit and gap tolerance
 ctrl <- scip_control(verbose = FALSE, time_limit = 60, gap_limit = 0.01)
+
+## One-shot: aggressive presolving, heuristics, and cut separation
+ctrl2 <- scip_control(verbose = FALSE,
+                      presolve_emphasis = "aggressive",
+                      heuristics_emphasis = "aggressive",
+                      separating_emphasis = "aggressive")
 
 ## Model-building: set SCIP parameters directly
 m <- scip_model("tuning_example")
