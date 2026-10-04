@@ -98,38 +98,124 @@ printf calls. macOS builds give false confidence.
 9. **Document** which patches were applied, which were dropped, and
    why, in this file.
 
-## Toward eliminating patches: upstream `-DEMBEDDED_INTERFACE`
+## Toward eliminating patches: upstream I/O abstraction
 
 All our patches exist because SCIP/SoPlex assume a standalone
 executable context (stdout/stderr/exit are fine). For an embedded
 library context (R, Python, etc.), these need to be redirected.
+The long-term fix is a compile-time I/O indirection *upstream*, so
+that the submodules can point at plain release tags.
 
-A clean upstream solution would be a compile-time flag, e.g.:
+### Status of the upstream conversation
 
-```cmake
-option(EMBEDDED_INTERFACE "Build for embedded use (R, Python)" OFF)
-```
+| Date | Event |
+|------|-------|
+| 2026-04-07 | Feeler issue opened on `scipopt/scip` proposing a compile-time I/O abstraction (`scip_io.h`, CMake option). Detailed proposal text and PR plan: `inst/plan/patches_pr_plan.md`. |
+| 2026-10-04 | Maintainers replied: "In general we welcome any useful contributions. SCIP already has a message handler system but this does not prevent us from using standard functions in the default handler implementation. So if there is a way to redirect it in a compatible way without invasive impact, this sounds promising." |
+| 2026-10-04 | Replied proposing the staged sequence below and asking whether it works for them. **Waiting for a yes before preparing PRs.** |
 
-When enabled, a header like `scip/embedded_io.h` would redirect:
+### What the forks carry today (SCIP 10.1.0 / SoPlex 8.1.0)
 
-```c
-#ifdef EMBEDDED_INTERFACE
-  #include "embedded_streams.h"   // provided by the embedding package
-  #define SCIP_PRINTF(...)  embedded_printf(__VA_ARGS__)
-  #define SCIP_ABORT()      embedded_abort()
-  // etc.
-#else
-  #define SCIP_PRINTF(...)  printf(__VA_ARGS__)
-  #define SCIP_ABORT()      abort()
-#endif
-```
+Counted from the `r_pkg-10.1.0` and `r_pkg-8.1.0` patch series
+(`git format-patch v10.1.0..r_pkg-10.1.0`, same for SoPlex):
 
-The embedding package (R, Python, etc.) would provide the
-`embedded_streams.h` implementation mapping to its own I/O system.
+| Fork | Commits | I/O for CRAN | Portability / warnings |
+|------|---------|--------------|------------------------|
+| scip-src | 10 | 6 — about 125 printf-family calls, 50 `exit`/`abort`, 20 `std::cout` across ~35 files; plus `objconshdlr.h`, `tpi_openmp.c`, `scipshell.c`, and the `r_streams.h` include | 4 one-hunk fixes: cppad pragma/`%zu`/uninitialized warnings, `strerror_r` on macOS, `(void)` prototypes in `tpi_openmp.c`, `<cstdlib>` in `multiprecision.hpp` |
+| soplex-src | 4 | 3 — about 105 `std::cerr` and 60 `std::cout` across ~60 template headers (almost all inside `SPX_MSG_ERROR(...)` arguments), the `spxout.cpp` redirect, the `r_streams.h` include | 1: `<istream>` for libc++ 23 |
 
-This would benefit all downstream packages (R, Python, Julia) and
-eliminate the need for fork-specific patches entirely. PRs to
-upstream repos are a future goal.
+Every I/O site is a mechanical token swap (`printf` → `Rprintf`,
+`fprintf(stderr, ...)` → `REprintf`, `exit`/`abort` → `Rf_error`,
+`std::cout`/`std::cerr` → `r_cout()`/`r_cerr()`). The portability
+hunks never conflict at a bump; all the re-patching cost is the I/O
+sites.
+
+### What "compatible, without invasive impact" rules in and out
+
+- **Default build must be unchanged.** The macros expand to the
+  original libc tokens unless the embedder opts in, so the
+  preprocessed default sources are byte-identical. Worth demonstrating
+  in the PR (`-E` diff) rather than asserting.
+- **No public header or ABI change.** This has a concrete consequence
+  for the message handler layer. The handler callbacks
+  (`SCIP_DECL_MESSAGEINFO` etc.) receive a `FILE* file`, and SCIP's
+  core passes `stdout`/`stderr` as *values* and compares against them
+  (`message.c`: `file == stdout`). Our fork replaces those with `NULL`
+  meaning "console" — fine for us, but it changes a public contract and
+  cannot go upstream as is. The upstream shape has to keep the
+  contract: `SCIP_IO_STDOUT`/`SCIP_IO_STDERR` tokens that default to
+  `stdout`/`stderr`, and a default-handler sink (`logMessage`,
+  `errorPrintingDefault`) that dispatches on them. In the custom
+  configuration the embedder defines them as sentinel `FILE*` values
+  that are compared but never dereferenced (the same device the R
+  `highs` package's compliance shim uses).
+- **Small PRs.** The April plan's single "migrate everything" PR
+  (~150 sites, including vendored nauty/cppad/dejavu) is what the
+  maintainers will read as invasive. Cut it along the layers below.
+
+### Staged sequence (proposed to the maintainers 2026-10-04)
+
+0. **Goodwill portability PRs, all standalone bug fixes:** `strerror_r`
+   on macOS (`misc.c`), `(void)` prototypes in `tpi_openmp.c`,
+   `<cstdlib>` in `multiprecision.hpp`, `<istream>` in SoPlex
+   `basevectors.h`/`mpsinput.cpp`, the `%zu`/uninitialized fixes in
+   cppad and nauty. Four fork commits disappear outright. The cppad
+   *pragma comment-outs* are CRAN-specific and stay as an R patch.
+1. **`scip/scip_io.h` + CMake option + the default message handler**
+   (`message.c`, `message_default.c`): the layer the maintainers named,
+   about 50 lines, on code they own. Establishes the pattern.
+2. **Handler-less SCIP-owned sub-libraries, one PR each:**
+   `blockmemshell/memory.c`, `xml/xmlparse.c`, `dijkstra/dijkstra.c`,
+   `tpi/tpi_openmp.c`, the `exit()` paths in `lpi/lpi_spx.cpp`,
+   `objscip/objconshdlr.h`, the stragglers in `src/scip/*.c` (dialog,
+   disp, expr, interrupt, matrix, nlp, nlpioracle, rational.cpp,
+   reader_gms, reader_opb, scipshell, stat, cons_nonlinear), and the
+   `SCIPdebugMessage`/`SCIPstatisticPrintf` macros in `pub_message.h`.
+   None of the standalone sub-libraries include `scip/def.h`, so each
+   needs its own `#include "scip/scip_io.h"`.
+3. **Vendored nauty, cppad, dejavu: ask first.** They may prefer vendored
+   code untouched. If so, those sites stay as R patches (few, stable)
+   or are absorbed by the downstream shim below.
+4. **SoPlex, separate repo, separate issue.** The problem is `std::cerr`
+   named inside `SPX_MSG_ERROR(...)` arguments in template headers. The
+   non-invasive fix is for the macro (and `SPxOut`'s default streams in
+   `spxout.cpp`) to supply the stream, so call sites stop naming the
+   global. Plus the `FMT_USE_STRING_VIEW` define as a build option.
+
+Design point to settle before writing the header: whether the
+embedder's `exit`/`abort` replacement may be `noreturn`. Ours is (it
+long-jumps via `Rf_error`). If SCIP code after an `exit()` relies on
+nothing following, the default macro should carry `noreturn` too, or
+compiler warnings differ between configurations.
+
+### Downstream complement: force-included shim + symbol gate
+
+Independent of upstream progress, the R `highs` package's mechanism
+(branch `cran-shim`, 2026-07) applies here for the C side:
+`build_scip.sh` already exports `CFLAGS`/`CXXFLAGS` into both cmake
+runs, so one force-included header (`-include r_shim.h`) with
+function-like macros for `printf`, `fprintf`, `vfprintf`, `puts`,
+`putchar`, `fputs`, `fflush`, `exit`, `abort` and sentinel
+`stdout`/`stderr` covers every C translation unit by construction,
+including the next bare `printf("err1")` nobody noticed. A post-build
+`nm` gate over `libscip.a`/`libsoplex.a` (and the final `.so`, for LTO)
+replaces the manual grep in step 5 of the upgrade workflow above.
+
+Limits: `std::cout`/`std::cerr` are qualified names and not macro
+reachable (declaring into `namespace std` is undefined behavior), so
+SoPlex and the ~20 C++ sites in SCIP still need upstream or patches;
+the two `sprintf` sites stay hand-patched. The shim would retire the
+five heavy SCIP I/O commits on its own.
+
+Decision pending (user): build the `nm` gate now (cheap, catches drift
+either way) and the shim after the maintainers answer, or wait for
+upstream entirely.
+
+### What stays as an R patch regardless
+
+- cppad diagnostic-pragma comment-outs (CRAN flags the pragmas; not an
+  upstream concern).
+- Anything the maintainers decline.
 
 ### R-exts §1.2.6 compliance
 
