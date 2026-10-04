@@ -1,28 +1,20 @@
 # scip 1.10.1-1
 
 - Upgrade the bundled solvers to the SCIP Optimization Suite 10.1.0
-  (released 2026-09-18): SCIP 10.1.0, SoPlex 8.1.0, PaPILO 3.0.2. No
-  change to the SCIP API the package uses; the R interface is unchanged
-  apart from the additions below.
+  (released 2026-09-18): SCIP 10.1.0, SoPlex 8.1.0, PaPILO 3.0.2. 
 - New `scip_control()` arguments `presolve_emphasis` and
   `separating_emphasis`, taking `"default"`, `"aggressive"`, `"fast"`,
   or `"off"` exactly like the existing `heuristics_emphasis`. They map
   to SCIP's `SCIPsetPresolving()` and `SCIPsetSeparating()`
   meta-settings, which adjust whole families of parameters at once and
-  cannot be reproduced through individual parameters. Requested by Jeff
-  Hanson for conservation-planning problems in prioritizr (#2).
+  cannot be reproduced through individual parameters (#2).
 - New `scip_control()` argument `emphasis` exposing SCIP's global
   parameter profiles (`SCIPsetEmphasis()`): `"feasibility"`,
   `"optimality"`, `"hardlp"`, `"numerics"`, `"easycip"`, `"cpsolver"`,
   `"counter"`, `"phasefeas"`, `"phaseimprove"`, `"phaseproof"`,
   `"benchmark"`. All emphasis settings are applied before individual
   parameters, so a native parameter passed via `...` still wins.
-- Installing from a source checkout (for example with `remotes` or
-  `devtools`) no longer copies the bundled SCIP and SoPlex source trees
-  (about 250 MB) into the R library. A top-level `.Rinstignore` now
-  excludes them, replacing the previous `configure` heuristic that deleted
-  the sources only when pre-built vignettes were present. Installed size
-  from a CRAN tarball is unchanged.
+- Installing from a source checkout now more efficient.
 
 # scip 1.10.0-4
 
