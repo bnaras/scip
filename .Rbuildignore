@@ -7,8 +7,10 @@
 # ── Git/CI metadata in submodules (including nested) ──
 ^inst/scip/\.git
 ^inst/soplex/\.git
-^inst/scip/src/soplex/\.git
-^inst/soplex/src/papilo/\.git
+# Nested submodule copies are not used by the build (SCIP is pointed at inst/soplex,
+# SoPlex at src/papilo); the CRAN 1.10.1-1 tarball contains none of their files.
+^inst/scip/src/soplex$
+^inst/soplex/src/papilo$
 ^inst/scip/\.gitlab
 ^inst/soplex/\.gitlab
 ^inst/scip/\.github$
