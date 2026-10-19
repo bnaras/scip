@@ -1,13 +1,119 @@
 # Plan: Upstream PRs to Eliminate SCIP/SoPlex Fork Patches
 
-## Status (2026-10-04) — read this first
+## Status (2026-10-19) — read this first
 
-- **2026-04-07** feeler issue opened on `scipopt/scip`.
-- **2026-10-04** maintainers replied: contributions welcome; they note the
+- **2026-04-07** feeler issue opened on `scipopt/scip` (#194).
+- **2026-04-14** Dominik Kamp replied: contributions welcome; they note the
   *default message handler implementation* still uses standard functions;
   a redirect "in a compatible way without invasive impact" sounds promising.
-- **2026-10-04** we replied proposing the staged sequence below. **Waiting for
-  a yes before preparing any PR branch.**
+- **2026-10-04** we replied proposing the staged sequence below.
+- **2026-10-09** Stefan Vigerske (member): **yes**, with changes:
+  1. **One PR for the actual functionality**, so they see the full footprint.
+     This merges Tiers 1–3 below into a single PR.
+  2. **Portability fixes in a separate PR, branched from `v101-bugfix`**
+     (not the `v10.1.0` tag).
+  3. **Default message handler: do not compile `message_default.c`** into the
+     library when the flag is set. Single call site,
+     `scip_general.c:258` (`SCIPcreateMessagehdlrDefault`). Accepted, but it
+     does **not** replace the sentinel tokens: the CRAN-flagged
+     `stdout`/`stderr` references are in `message.c` (see Findings).
+  4. **Vendored code**: prefer untouched, but necessary changes are acceptable.
+  5. **Header location**: libc wrappers already live in `pub_misc.h` /
+     `pub_fileio.h`; put the macros there rather than a new `scip_io.h`.
+  6. **His question**: does R leave symbols unresolved in libscip, or pass
+     function pointers?
+- **2026-10-19 20:39 UTC** we replied ([comment](https://github.com/scipopt/scip/issues/194#issuecomment-6276815489)):
+  accepted 1–5, answered 6 with link-time externs.
+- **2026-10-19 20:48 UTC** we posted a correction ([comment](https://github.com/scipopt/scip/issues/194#issuecomment-6276998179)),
+  after checking `v101-bugfix`:
+  - excluding `message_default.c` is fine but is not where CRAN bites (it only
+    writes to the `FILE*` it is given); the flagged `stdout`/`stderr`
+    references are in `message.c`, to be routed through two tokens
+    (sentinel design, kept);
+  - withdrew "preprocessed sources identical"; promised instead that default
+    builds behave and print exactly as today;
+  - scope from an `nm` inventory of an unpatched build, existing SCIP message
+    routines first, new macros only where there is no handler;
+  - asked which linking option they prefer (see Mechanism);
+  - offered a CI job; flagged that SoPlex needs a separate issue.
+- **Waiting on**: Stefan's answer to the linking question (a) vs (b).
+  Neither blocks the portability PR or the inventory.
+
+### Next steps
+
+1. **Inventory.** Build plain `v101-bugfix` with R's exact configuration
+   (static, Release, `LPS=spx`, `EXPRINT=none`, `PAPILO=OFF`, `SYM` default
+   `snauty`, once with `TPI=none` and once with `TPI=omp`). `nm` each object
+   file for the symbols in `tools:::so_symbol_names_table`. That list is the
+   scope of the functionality PR and goes into its description. Needs a
+   `fetch` of upstream and a worktree in `~/GitHub/worktrees/` (per-task
+   approval).
+2. **Portability PR** against `v101-bugfix`: `strerror_r` on macOS
+   (`misc.c:10733`), `(void)` prototypes for `SCIPtpiGetNumThreads` /
+   `SCIPtpiGetThreadNum` (`tpi_openmp.c:416,423`), `<cstdlib>` in
+   `multiprecision.hpp` (`atof`, line 75). All three verified still needed on
+   `v101-bugfix` (2026-10-19). Before sending the `strerror_r` fix, find what
+   defines `_GNU_SOURCE` on macOS in our build (SCIP itself never does) and
+   write a reproducer on a plain build. Nothing vendored; SoPlex `<istream>`
+   goes to the SoPlex repo. Promised "very soon" on 2026-10-04, so send it
+   promptly.
+3. **Functionality PR**, after the inventory and Stefan's linking answer.
+4. **SoPlex issue**, once the SCIP side is settled.
+
+### What CRAN actually flags
+
+`tools:::so_symbol_names_table` (R 4.5): C `abort`, `assert`, `exit`,
+`_exit`, `_Exit`, `printf`, `puts`, `putchar`, `vprintf`, `sprintf`,
+`vsprintf`, `stdout`, `stderr`, `rand`, `random`, `rand_r`, `srand`,
+`srandom`, `srand48`; C++ `std::cout`, `std::cerr`. **`fputs`/`fprintf`/
+`fflush` on an arbitrary `FILE*` are not flagged**; naming `stdout`/`stderr`
+is. Compilers rewrite `printf("x\n")` into `puts`, so the inventory must come
+from `nm`, not grep.
+
+### Findings on `v101-bugfix` that shrink the footprint (2026-10-19)
+
+- **`message_default.c`** only does `fputs(msg, file)` / `fflush(file)`. It is
+  not a CRAN problem. **`message.c`** names `stdout`/`stderr` as values
+  (lines 146, 148, 177, 192–228, …) and is always compiled: this is where the
+  sentinel tokens go.
+- **`blockmemshell/memory.c`**: SCIP's CMake sets `WITH_SCIPDEF on`
+  (`CMakeLists.txt:414`), so `debugMessage`/`errorMessage` already go through
+  `SCIPdebugMessage`/`SCIPerrorMessage`. Only `printInfo` and the buffer
+  display `printf`s (around line 3194) remain. Our fork rewrote far more.
+- **`SCIPABORT()` is `assert(FALSE)`**, and release-build `SCIPdebugMessage`/
+  `SCIPdebugPrintf`/`SCIPstatisticPrintf` are `while( FALSE ) printf`: dead in
+  a Release build. Do not change `pub_message.h` unless the inventory shows
+  a symbol.
+- **Not compiled in the R build**: CppAD (`EXPRINT=none`), `lpi_clp.cpp`
+  (`LPS=spx`), PaPILO (`PAPILO=OFF`). The fork patches 24 CppAD files and
+  `lpi_clp.cpp`; none of that belongs upstream.
+- **`tpi_openmp.c:586`** does `printf("err1")` then returns `SCIP_ERROR`; it
+  should be `SCIPerrorMessage`, a fix they can accept on its merits.
+- **Real handler-less sites**: `dijkstra.c` `abort()`s (lines 51–71),
+  `xmlparse.c` `fprintf(stderr, …)` (lines 125–160) and `abort()` (752), plus
+  nauty/dejavu only where the inventory shows them.
+
+**Mechanism (answer to question 6).** Function pointers alone cannot satisfy
+CRAN: its compiled-code check flags any reference to `printf`/`exit`/
+`abort`/`stderr`, and default pointers to libc keep those references. The
+flag must remove them at compile time. With the flag set, the macros expand to
+a few functions declared in `pub_misc.h` and left undefined in libscip:
+vprintf-style stdout/stderr output with format attributes, and `noreturn`
+exit/abort. The embedder defines them; R links libscip statically, so
+`Rvprintf`/`REvprintf`/`Rf_error` satisfy them. No embedder header on the
+include path, so the April `scip_custom_io.h` design below is superseded.
+**Linking catch (asked upstream):** with the flag set, the `scip` executable
+and a shared libscip cannot link on their own. Options: (a) the flag is only
+for static builds and skips the executable; (b) the default implementations
+live in one source file left out under the flag, the same pattern as
+`message_default.c`. (b) makes the default build call a function rather than
+`printf` directly; that only touches error paths, so the cost is negligible.
+**Promise to keep:** default builds behave and print exactly as today. Never
+claim identical preprocessed sources again.
+**`noreturn` vs R:** upstream promises only "must not return". `Rf_error`
+long-jumps, which skips destructors in C++ frames (`lpi_spx.cpp`, dejavu) and
+leaves the SCIP instance half-built. That is R's problem to handle. Do not
+let the upstream documentation suggest `longjmp` is supported.
 - Fork state has moved on since this plan was written: the forks are now
   `r_pkg-10.1.0` (10 commits) and `r_pkg-8.1.0` (4 commits). The SoPlex fmt
   literal-operator fix (PR C below) is upstream in 8.1.0 and is no longer
@@ -17,30 +123,28 @@
   Current per-commit classification: `Build_Notes/README.md`, section
   "Toward eliminating patches".
 
-### Revised sequencing (supersedes "PR Sequencing Strategy" below)
+### The PRs (agreed shape, 2026-10-09; supersedes the April tiers)
 
-The maintainers' constraint rules out PR E as drafted (one ~150-site
-migration including vendored code). Cut along layers instead:
+| PR | Repo / base | Content |
+|----|-------------|---------|
+| Portability | scipopt/scip, `v101-bugfix` | `strerror_r`, `(void)` prototypes, `<cstdlib>`. Nothing vendored. |
+| Functionality | scipopt/scip | One PR, scoped by the `nm` inventory: the CMake option; `message_default.c` left out under the flag; sentinel tokens in `message.c`; existing SCIP message routines where reachable; new macros in `pub_misc.h` only for handler-less code (`dijkstra`, `xmlparse.c`, vendored nauty/dejavu only where unavoidable); CI job that builds with the flag and runs the `nm` check; CHANGELOG entry; SCIP code style. |
+| SoPlex | scipopt/soplex, separate issue first | `SPX_MSG_ERROR` and `SPxOut` default streams supply the stream so call sites stop naming `std::cerr`/`std::cout`; `<istream>` (`basevectors.h`, `mpsinput.cpp`). The only layer with no downstream workaround (C++ streams are not macro-reachable). |
 
-| Tier | Content | Notes |
-|------|---------|-------|
-| 0 | Goodwill portability PRs: `strerror_r` (`misc.c`), `(void)` prototypes (`tpi_openmp.c`), `<cstdlib>` (`multiprecision.hpp`), SoPlex `<istream>` (`basevectors.h`, `mpsinput.cpp`), `%zu`/uninitialized fixes in cppad and nauty | Standalone bug fixes; send immediately. The cppad pragma comment-outs are CRAN-specific and stay as an R patch. |
-| 1 | `scip/scip_io.h` + CMake option + default message handler (`message.c`, `message_default.c`) | The layer the maintainers named; ~50 lines on code they own. **Must keep the public `FILE* file` callback contract** — see below. |
-| 2 | Handler-less SCIP-owned sub-libraries, one PR each: `blockmemshell/memory.c`, `xml/xmlparse.c`, `dijkstra/dijkstra.c`, `tpi/tpi_openmp.c`, `lpi/lpi_spx.cpp` exit paths, `objscip/objconshdlr.h`, `src/scip/*.c` stragglers, `pub_message.h` debug macros | Each sub-library needs its own `#include "scip/scip_io.h"` (none include `scip/def.h`). |
-| 3 | Vendored nauty, cppad, dejavu | Ask first; they may prefer vendored code untouched. Fallback: keep as R patches or absorb with the downstream shim. |
-| 4 | SoPlex (separate repo/issue): `SPX_MSG_ERROR` and `SPxOut` default streams supply the stream so call sites stop naming `std::cerr`/`std::cout`; `FMT_USE_STRING_VIEW` as a build option | Only layer with no downstream workaround (C++ streams are not macro-reachable). |
+Stays as R-only patches: the CppAD pragma comment-outs and `%zu` fixes (CppAD
+is not even compiled in the R build) and the nauty uninitialized-variable
+warnings, unless the inventory or upstream says otherwise.
 
-**The message handler contract.** The design below (and our fork's
-`message.c` patch) passes `NULL` for "console" where SCIP passes `stdout`/
-`stderr` as values and compares against them. That changes what third-party
-handlers receive and cannot go upstream. Upstream shape: `SCIP_IO_STDOUT`/
-`SCIP_IO_STDERR` tokens defaulting to `stdout`/`stderr`; `logMessage` and
-`errorPrintingDefault` dispatch on them; in custom mode the embedder defines
-them as sentinel `FILE*` values that are compared, never dereferenced.
+**The message handler contract.** Our fork's `message.c` patch passes `NULL`
+for "console" where SCIP passes `stdout`/`stderr` as values and compares
+against them. That changes what third-party handlers receive and cannot go
+upstream. Upstream shape: `SCIP_IO_STDOUT`/`SCIP_IO_STDERR` tokens defaulting
+to `stdout`/`stderr`, used in `message.c`; in custom mode the embedder defines
+them as sentinel `FILE*` values that are compared, never dereferenced. This
+is still needed after `message_default.c` is excluded.
 
-**Open design point:** whether the embedder's `SCIP_IO_EXIT`/`SCIP_IO_ABORT`
-may be `noreturn` (ours long-jumps via `Rf_error`). If so, the default should
-carry `noreturn` too, or warnings differ between configurations.
+**`noreturn`** (closed 2026-10-19): the exit and abort functions are
+`noreturn` in both configurations (`Rf_error` is `NORET`).
 
 **Downstream complement (independent of upstream):** a force-included shim
 header plus a post-build `nm` gate in `build_scip.sh`, the R `highs` package's
@@ -48,8 +152,14 @@ header plus a post-build `nm` gate in `build_scip.sh`, the R `highs` package's
 reach `std::cout`/`std::cerr`. Pending user decision whether to build it now
 or wait for upstream.
 
-The sections below are the April 2026 design and remain the source for the
-header text, the CMake wiring, and the PR descriptions.
+---
+
+**Everything below is the April 2026 design, kept for history only.** It is
+superseded by the sections above wherever they disagree: per-tier PRs, the
+`scip_io.h` / `scip_custom_io.h` include-path design, the site counts (taken
+from grepping the fork, not from `nm`), and the "Arguments" section's claim
+that Python or Julia embedders benefit (PySCIPOpt links a shared libscip and
+gains nothing). Do not quote numbers or claims from below to upstream.
 
 ## Context
 
