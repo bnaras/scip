@@ -33,7 +33,7 @@
     </div>
 
     <div class="section level2">
-<h2 class="pkg-version" data-toc-text="1.10.1-1" id="scip-1101-1">scip 1.10.1-1<a class="anchor" aria-label="anchor" href="#scip-1101-1"></a></h2>
+<h2 class="pkg-version" data-toc-text="1.10.1-1" id="scip-1101-1">scip 1.10.1-1<a class="anchor" aria-label="anchor" href="#scip-1101-1"></a></h2><p class="text-muted">CRAN release: 2026-10-04</p>
 <ul><li>Upgrade the bundled solvers to the SCIP Optimization Suite 10.1.0 (released 2026-09-18): SCIP 10.1.0, SoPlex 8.1.0, PaPILO 3.0.2.</li>
 <li>New <code><a href="../reference/scip_control.html">scip_control()</a></code> arguments <code>presolve_emphasis</code> and <code>separating_emphasis</code>, taking <code>"default"</code>, <code>"aggressive"</code>, <code>"fast"</code>, or <code>"off"</code> exactly like the existing <code>heuristics_emphasis</code>. They map to SCIP’s <code>SCIPsetPresolving()</code> and <code>SCIPsetSeparating()</code> meta-settings, which adjust whole families of parameters at once and cannot be reproduced through individual parameters (<a href="https://github.com/bnaras/scip/issues/2" class="external-link">#2</a>).</li>
 <li>New <code><a href="../reference/scip_control.html">scip_control()</a></code> argument <code>emphasis</code> exposing SCIP’s global parameter profiles (<code>SCIPsetEmphasis()</code>): <code>"feasibility"</code>, <code>"optimality"</code>, <code>"hardlp"</code>, <code>"numerics"</code>, <code>"easycip"</code>, <code>"cpsolver"</code>, <code>"counter"</code>, <code>"phasefeas"</code>, <code>"phaseimprove"</code>, <code>"phaseproof"</code>, <code>"benchmark"</code>. All emphasis settings are applied before individual parameters, so a native parameter passed via <code>...</code> still wins.</li>

@@ -2,6 +2,8 @@
 
 ## scip 1.10.1-1
 
+CRAN release: 2026-10-04
+
 - Upgrade the bundled solvers to the SCIP Optimization Suite 10.1.0
   (released 2026-09-18): SCIP 10.1.0, SoPlex 8.1.0, PaPILO 3.0.2.
 - New [`scip_control()`](../reference/scip_control.md) arguments
