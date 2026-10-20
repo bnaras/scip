@@ -51,7 +51,47 @@
   which drops `__DARWIN_C_LEVEL` from the `strerror_r` condition (equivalent:
   it only mattered on Apple, which the first clause covers). Already merged
   on to `master` via `v10-minor` (`a16190adf6`, `723f18f2de`).
-- **Waiting on**: nothing. Next is the functionality PR.
+- **2026-10-20 20:06 UTC** functionality PR opened:
+  [scipopt/scip#236](https://github.com/scipopt/scip/pull/236),
+  `bnaras/scip-src:io-redirect` → `master` (`723f18f2de`, SCIP 11.0.0-dev),
+  two commits: `92e72013b3` (four standalone fixes: `va_list` passed to
+  `printf` in `SCIPstatDebugMessagePrint()`, `sprintf` in `cons_nonlinear.c`,
+  `printf("err1")` in `tpi_openmp.c`, `abort()` in `dijkstraGraphIsValid()`)
+  and `86a78d6c9f` (the mechanism). In short:
+  - CMake option `CUSTOMIO` → `SCIP_CUSTOM_IO` in `config.h`. New
+    `SCIPio*` names in `pub_misc.h` (group "Standard Streams and
+    Termination"): macros for the C library by default, functions defined by
+    the embedding program under the flag (`SCIPioVPrintStdout`,
+    `SCIPioVPrintStderr`, `SCIPioExit`, `SCIPioAbort`, `SCIPioGetStdout`,
+    `SCIPioGetStderr`, plus `SCIPcreateMessagehdlrDefault`).
+  - Option (b): `io_default.c` (new), `message_default.c` and `scipshell.c`
+    move from libscip into the `scip` executable under the flag.
+    `CUSTOMIO` with `SHARED=on` is a CMake error.
+  - With the flag, libscip's remaining flagged objects are vendored nauty
+    (4 files), `compute_symmetry_sassy_nauty.cpp` (dejavu headers) and
+    `lpi_spx.cpp` (SoPlex headers), all left untouched.
+  - Without the flag, 429 of 433 libscip objects compile to the same code
+    as plain `master`; the other four are the fixes.
+  - The PR body carries the per-platform table of R's flagged symbol names
+    for their internal CI. No CI job of our own (their GitHub CI is only a
+    quick check).
+  - Questions left to them in the PR: skip unit tests/examples/applications
+    under `CUSTOMIO` (they cannot link without the hooks); bump
+    `SCIP_VERSION_API` (not done, they bump it in their own commits); a nauty
+    follow-up for its `exit` calls; retarget to `v10-minor`; shared builds via
+    `-undefined dynamic_lookup`.
+  - Verification before opening: macOS, Linux gcc 13 `TPI=omp`, clang 23 /
+    libc++; Release and Debug; ctest with and without the flag;
+    `check_scip_defs.sh`'s build matrix and `CXXONLY`, compared with plain
+    `master` (which does not compile as C++ on its own: 10 errors in six
+    files, e.g. `cons_pseudoboolean.c:239`); the R package's C sources linked
+    against the `CUSTOMIO` libscip, solving a MIP. Scripts and logs:
+    `local/upstream_io_2026-10-20/functionality/` (gitignored).
+  - Found by these checks before opening: `objconshdlr.h`'s default
+    `scip_print()` (Linux inventory), and an `extern "C"` problem in the
+    first draft (`tclique.h` includes `tclique_def.h` inside `extern "C"`,
+    so `pub_misc.h` is included by the `tclique` `.c` files instead).
+- **Waiting on**: review of #236.
 
 ### Next steps
 
@@ -78,15 +118,14 @@
      the fix. Kept because #194 promised it, described as exactly that.
    - `printf("err1")` (`tpi_openmp.c:586`) was **left out**: #194 said the
      portability PR is "just" the three. It goes into the functionality PR.
-3. **Functionality PR**, linking option (b): the default implementations
-   in one source file, left out of libscip under the flag and built into
-   the `scip` executable. Base: presumably `master` (he named `v101-bugfix`
-   only for the portability fixes); say so in the PR. Scope: the SCIP-core
-   table in "Inventory", including `tpi_openmp.c:586` (→ `SCIPerrorMessage`)
-   and `memory.c:98` (`printInfo`). The PR description lists every symbol
-   their internal CI should check for, per platform (see "What CRAN
-   actually flags").
-4. **SoPlex issue**, once the SCIP side is settled.
+3. **Functionality PR: opened 2026-10-20 as #236** (see Status), linking
+   option (b), base `master`. Respond to review; rerun the checks in
+   `local/upstream_io_2026-10-20/functionality/` after any change.
+4. **SoPlex issue**, once the mechanism in #236 is settled, proposing the
+   same shape for `SPX_MSG_ERROR` and `SPxOut`'s default streams.
+5. **R package, on moving to SCIP 11**: drop `-DSCIP_LONGINT_FORMAT` from
+   the build flags; `master`'s `def.h:149` defines it without a guard, which
+   gave 427 `-Wmacro-redefined` warnings in a macOS build with the `-D`.
 
 ### Inventory (plain `v101-bugfix` `736f7bd6d7`, 2026-10-19)
 
@@ -201,7 +240,7 @@ let the upstream documentation suggest `longjmp` is supported.
 | PR | Repo / base | Content |
 |----|-------------|---------|
 | Portability | scipopt/scip, `v101-bugfix` | `strerror_r`, `(void)` prototypes, `<cstdlib>`. Nothing vendored. **Opened 2026-10-19 as #235, merged 2026-10-20.** |
-| Functionality | scipopt/scip (base presumably `master`) | One PR, scoped by the `nm` inventory (table above), including `printf("err1")` → `SCIPerrorMessage`: the CMake option; `message_default.c` left out under the flag; sentinel tokens in `message.c`; existing SCIP message routines where reachable; new macros in `pub_misc.h` only for handler-less code (`dijkstra`, `xmlparse.c`, vendored nauty/dejavu only where unavoidable); default implementations in one file built into the `scip` executable (option b); the full per-platform symbol list for their internal CI test; CI job that builds with the flag and runs the `nm` check; CHANGELOG entry; SCIP code style. |
+| Functionality | scipopt/scip (base presumably `master`) | One PR, scoped by the `nm` inventory (table above), including `printf("err1")` → `SCIPerrorMessage`: the CMake option; `message_default.c` left out under the flag; sentinel tokens in `message.c`; existing SCIP message routines where reachable; new macros in `pub_misc.h` only for handler-less code (`dijkstra`, `xmlparse.c`, vendored nauty/dejavu only where unavoidable); default implementations in one file built into the `scip` executable (option b); the full per-platform symbol list for their internal CI test; CI job that builds with the flag and runs the `nm` check; CHANGELOG entry; SCIP code style. **Opened 2026-10-20 as #236** (base `master`; no CI job of our own, the symbol table is in the PR body for their internal CI). |
 | SoPlex | scipopt/soplex, separate issue first | `SPX_MSG_ERROR` and `SPxOut` default streams supply the stream so call sites stop naming `std::cerr`/`std::cout`; `<istream>` (`basevectors.h`, `mpsinput.cpp`). The only layer with no downstream workaround (C++ streams are not macro-reachable). |
 
 Stays as R-only patches: the CppAD pragma comment-outs and `%zu` fixes (CppAD

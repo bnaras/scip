@@ -125,6 +125,7 @@ that the submodules can point at plain release tags.
 | 2026-10-19 | Replied (link-time externs; R links libscip statically), then posted a correction: the CRAN-flagged `stdout`/`stderr` references are in `message.c`, not `message_default.c`; withdrew "identical preprocessed sources"; will scope from an `nm` inventory; asked which linking option they prefer. |
 | 2026-10-19 | Portability PR opened: [scipopt/scip#235](https://github.com/scipopt/scip/pull/235) against `v101-bugfix` (`strerror_r`, `(void)` prototypes, `<cstdlib>`), each fix reproduced on plain `v101-bugfix` first. Symbol inventory of plain `v101-bugfix` done; results in the plan. |
 | 2026-10-20 | Stefan chose linking option (b): default implementations in a separate file, left out of libscip under the flag and built into the `scip` executable. He wants the list of symbols to check for, for a test in their internal CI. #235 merged into `v101-bugfix` (and on to `master`) with one simplification of his own. Next: the functionality PR. |
+| 2026-10-20 | Functionality PR opened: [scipopt/scip#236](https://github.com/scipopt/scip/pull/236) against `master`. CMake option `CUSTOMIO`; `SCIPio*` names in `pub_misc.h` (C library macros by default, functions of the embedding program under the flag); `io_default.c`, `message_default.c` and `scipshell.c` built into the `scip` executable instead of libscip. Left flagged: vendored nauty, dejavu headers, `lpi_spx.cpp` (SoPlex headers). Waiting on review. |
 
 The current plan, findings and next steps are in
 `inst/plan/patches_pr_plan.md`, section "Status". This section keeps only
@@ -168,7 +169,9 @@ unpatched build instead.
    public `FILE*` callback contract (sentinel values in custom mode);
    SCIP's own message functions wherever they are reachable; new macros
    in `pub_misc.h` only for code with no handler; a CI job that builds with
-   the flag and runs the `nm` check.
+   the flag and runs the `nm` check. Opened as #236 (2026-10-20), base
+   `master`; instead of a CI job of ours, the PR lists the symbols for their
+   internal CI.
 3. **SoPlex**: separate issue and PR (`SPX_MSG_ERROR` and `SPxOut`'s default
    streams, plus `<istream>`).
 
