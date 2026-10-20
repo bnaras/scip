@@ -63,3 +63,6 @@ src/*.log
 # Knit artifacts (README.md is committed, .html is not needed)
 README.html
 
+# Local working files (upstream drafts, verification scripts and logs)
+/local/
+
