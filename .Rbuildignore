@@ -72,3 +72,4 @@
 ^scip_.*\.tar\.gz$
 ^TODO\.md$
 ^Build_Notes$
+^local$
