@@ -122,8 +122,9 @@ that the submodules can point at plain release tags.
 | 2026-04-14 | Dominik Kamp replied: "In general we welcome any useful contributions. SCIP already has a message handler system but this does not prevent us from using standard functions in the default handler implementation. So if there is a way to redirect it in a compatible way without invasive impact, this sounds promising." |
 | 2026-10-04 | Replied proposing a staged sequence (one PR per layer) and asking whether it works for them. |
 | 2026-10-09 | Stefan Vigerske (member): **yes**, with changes: one PR for the functionality; portability fixes as a separate PR against `v101-bugfix` (the 10.1.x maintenance branch); leave `message_default.c` out of the library under the flag; vendored code untouched unless necessary; macros in `pub_misc.h`/`pub_fileio.h`. Asked: unresolved symbols or function pointers? |
-| 2026-10-19 | Replied (link-time externs; R links libscip statically), then posted a correction: the CRAN-flagged `stdout`/`stderr` references are in `message.c`, not `message_default.c`; withdrew "identical preprocessed sources"; will scope from an `nm` inventory; asked which linking option they prefer. **Waiting on that answer.** |
+| 2026-10-19 | Replied (link-time externs; R links libscip statically), then posted a correction: the CRAN-flagged `stdout`/`stderr` references are in `message.c`, not `message_default.c`; withdrew "identical preprocessed sources"; will scope from an `nm` inventory; asked which linking option they prefer. |
 | 2026-10-19 | Portability PR opened: [scipopt/scip#235](https://github.com/scipopt/scip/pull/235) against `v101-bugfix` (`strerror_r`, `(void)` prototypes, `<cstdlib>`), each fix reproduced on plain `v101-bugfix` first. Symbol inventory of plain `v101-bugfix` done; results in the plan. |
+| 2026-10-20 | Stefan chose linking option (b): default implementations in a separate file, left out of libscip under the flag and built into the `scip` executable. He wants the list of symbols to check for, for a test in their internal CI. #235 merged into `v101-bugfix` (and on to `master`) with one simplification of his own. Next: the functionality PR. |
 
 The current plan, findings and next steps are in
 `inst/plan/patches_pr_plan.md`, section "Status". This section keeps only
@@ -160,7 +161,7 @@ unpatched build instead.
 
 1. **Portability PR** against `v101-bugfix`: `strerror_r` on macOS,
    `(void)` prototypes in `tpi_openmp.c`, `<cstdlib>` in
-   `multiprecision.hpp`. Nothing vendored. Opened as #235 (2026-10-19).
+   `multiprecision.hpp`. Nothing vendored. Opened as #235 (2026-10-19), merged 2026-10-20.
 2. **One functionality PR**, scoped by the symbol inventory and including
    `tpi_openmp.c`'s `printf("err1")` (→ `SCIPerrorMessage`): a CMake option; `message_default.c` left out
    under the flag; `stdout`/`stderr` tokens in `message.c` that keep the
@@ -171,8 +172,9 @@ unpatched build instead.
 3. **SoPlex**: separate issue and PR (`SPX_MSG_ERROR` and `SPxOut`'s default
    streams, plus `<istream>`).
 
-Details, the mechanism, and the linking question still open with the
-maintainers: `inst/plan/patches_pr_plan.md`.
+Linking: option (b), the default implementations in one file built into
+the `scip` executable (Stefan, 2026-10-20). Details and the mechanism:
+`inst/plan/patches_pr_plan.md`.
 
 ### Downstream complement: force-included shim + symbol gate
 
