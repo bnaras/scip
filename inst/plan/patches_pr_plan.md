@@ -36,29 +36,81 @@
     routines first, new macros only where there is no handler;
   - asked which linking option they prefer (see Mechanism);
   - offered a CI job; flagged that SoPlex needs a separate issue.
-- **Waiting on**: Stefan's answer to the linking question (a) vs (b).
-  Neither blocks the portability PR or the inventory.
+- **2026-10-19** portability PR opened: [scipopt/scip#235](https://github.com/scipopt/scip/pull/235),
+  `bnaras/scip-src:portability-v101-bugfix` → `v101-bugfix`, three commits
+  (`c8b7ddc8c8` strerror_r, `b7ec615577` `(void)`, `c9ffb07336` `<cstdlib>`),
+  each with its CHANGELOG line.
+- **Waiting on**: review of #235; Stefan's answer to the linking question
+  (a) vs (b). Only the functionality PR waits for the latter.
 
 ### Next steps
 
-1. **Inventory.** Build plain `v101-bugfix` with R's exact configuration
-   (static, Release, `LPS=spx`, `EXPRINT=none`, `PAPILO=OFF`, `SYM` default
-   `snauty`, once with `TPI=none` and once with `TPI=omp`). `nm` each object
-   file for the symbols in `tools:::so_symbol_names_table`. That list is the
-   scope of the functionality PR and goes into its description. Needs a
-   `fetch` of upstream and a worktree in `~/GitHub/worktrees/` (per-task
-   approval).
-2. **Portability PR** against `v101-bugfix`: `strerror_r` on macOS
-   (`misc.c:10733`), `(void)` prototypes for `SCIPtpiGetNumThreads` /
-   `SCIPtpiGetThreadNum` (`tpi_openmp.c:416,423`), `<cstdlib>` in
-   `multiprecision.hpp` (`atof`, line 75). All three verified still needed on
-   `v101-bugfix` (2026-10-19). Before sending the `strerror_r` fix, find what
-   defines `_GNU_SOURCE` on macOS in our build (SCIP itself never does) and
-   write a reproducer on a plain build. Nothing vendored; SoPlex `<istream>`
-   goes to the SoPlex repo. Promised "very soon" on 2026-10-04, so send it
-   promptly.
-3. **Functionality PR**, after the inventory and Stefan's linking answer.
+1. **Inventory: done 2026-10-19.** Results in "Inventory" below. Scripts,
+   raw tables and logs: `local/upstream_io_2026-10-19/portability_check/`
+   (gitignored).
+2. **Portability PR: done 2026-10-19, #235.** Each fix was reproduced on
+   plain `v101-bugfix` and re-checked after the fix:
+   - `strerror_r`: Apple clang 21, CMake build with `-D_GNU_SOURCE` added →
+     `misc.c:10747` `-Wint-conversion` error; without it macOS builds fine.
+     The only `_GNU_SOURCE` in SCIP is `tinycthread/tinycthread.h:69`, which
+     `misc.c` does not include; R's headers and our `r_streams.h` do not
+     define it either. What defined it in the March 2026 fork build is
+     unknown. Preprocessed `misc.c` before/after differs only in `__LINE__`
+     (Linux clang 23 with and without `-D_GNU_SOURCE`; macOS default).
+   - `(void)`: SCIP's own CMake adds `-Wstrict-prototypes` for GCC and Clang
+     (`CMakeLists.txt:265`) and compiles C with `-std=c99`, so every clang
+     build with `TPI=omp` warns at `tpi_openmp.c:416,423`. In the CRAN
+     clang-23 harness these were the only two sites in 398 C files; none
+     after the fix. GCC 13 does not warn (a prototype precedes the
+     definitions).
+   - `<cstdlib>`: **latent**. Under libc++ 23 `multiprecision.hpp` does not
+     compile on its own; all 27 `libscip` C++ files compile with or without
+     the fix. Kept because #194 promised it, described as exactly that.
+   - `printf("err1")` (`tpi_openmp.c:586`) was **left out**: #194 said the
+     portability PR is "just" the three. It goes into the functionality PR.
+3. **Functionality PR**, after Stefan's linking answer. Base: presumably
+   `master` (he named `v101-bugfix` only for the portability fixes); confirm
+   in the thread. Scope: the SCIP-core table in "Inventory", including
+   `tpi_openmp.c:586` (→ `SCIPerrorMessage`) and `memory.c:98`
+   (`printInfo`).
 4. **SoPlex issue**, once the SCIP side is settled.
+
+### Inventory (plain `v101-bugfix` `736f7bd6d7`, 2026-10-19)
+
+Built with R's configuration from `inst/build_scip.sh` against plain SoPlex
+8.1.0 (without `-I inst/config`): macOS arm64 Apple clang 21 `TPI=none`
+(27 of 425 objects flagged) and Ubuntu 24.04 gcc 13 `TPI=omp`,
+`_FORTIFY_SOURCE=3` (29 of 425). Check: `tools:::so_symbol_names_table`
+against `nm -Pg` undefined symbols. A link test of this package's
+`scip_wrapper.c` + `scip_init.c` against the plain libraries pulls in 400
+members; of the flagged objects only `scipshell.c` and `objconshdlr.cpp`
+are not linked. Line numbers come from reading the source at each flagged
+object, not from the compiler.
+
+SCIP core (the functionality PR):
+
+| Object | Symbols | Site |
+|---|---|---|
+| `scip/message.c` | stdout, stderr | default handler streams (sentinel tokens) |
+| `scip/disp.c` | stdout | `:484` `fflush(stdout)` |
+| `scip/expr.c`, `nlp.c`, `nlpioracle.c`, `reader_gms.c` | stdout | `file = stdout` defaults (`expr.c:2330`, `nlp.c:4262`, `nlpioracle.c:3026,3099`, `reader_gms.c:985`) |
+| `scip/reader_opb.c` | stderr | `:4111` `SCIPprintCons(scip, cons, stderr)` |
+| `scip/interrupt.c` | printf, exit | `:81-86` CTRL-C handler |
+| `scip/dialog.c`, `dialog_default.c` | printf | `dialog.c:178`; `dialog_default.c:399,487` |
+| `scip/matrix.c` | printf | `:1443-1455` |
+| `scip/stat.c` | printf, vprintf | `:932-953` |
+| `scip/rational.cpp` | std::cout, printf, putchar | `:1837-1883` |
+| `scip/cons_nonlinear.c` | sprintf | `:13483` |
+| `blockmemshell/memory.c` | printf | `:98` `printInfo` (errors already go through `SCIPerrorMessage` under `WITH_SCIPDEF`) |
+| `tclique/tclique_*.c` | printf, abort | macros in `tclique_def.h:54-86` |
+| `dijkstra/dijkstra.c` | abort | `:51-71` |
+| `xml/xmlparse.c` | printf, abort, stderr | `:125-160`, `:752` |
+| `tpi/tpi_openmp.c` (omp) | printf | `:586` `printf("err1")`; gcc emits `__printf_chk`, clang 23 `__vprintf_chk`, both flagged |
+
+Not SCIP's own code: `lpi/lpi_spx.cpp` (`std::cout`/`std::cerr`/`abort`
+instantiated from SoPlex templates → SoPlex issue);
+`symmetry/compute_symmetry_sassy_nauty.cpp` (`std::cout` from vendored
+dejavu headers); `nauty/*.c` (`exit`, `stderr`, `stdout`).
 
 ### What CRAN actually flags
 
@@ -68,7 +120,13 @@
 `srandom`, `srand48`; C++ `std::cout`, `std::cerr`. **`fputs`/`fprintf`/
 `fflush` on an arbitrary `FILE*` are not flagged**; naming `stdout`/`stderr`
 is. Compilers rewrite `printf("x\n")` into `puts`, so the inventory must come
-from `nm`, not grep.
+from `nm`, not grep. The table is platform-specific: on Linux (R 4.6.1 and
+R-devel 2026-10-02) it also flags the fortified `__printf_chk`,
+`__vprintf_chk`, `__sprintf_chk`, `__vsprintf_chk`; on macOS (R 4.6.1) it
+lists `___stdoutp`, `___stderrp`, `___assert_rtn`, `___sprintf_chk`,
+`___vsprintf_chk`.
+Under `_FORTIFY_SOURCE`, gcc turns `printf("err1")` into `__printf_chk` and
+clang 23 into `__vprintf_chk`; both are caught.
 
 ### Findings on `v101-bugfix` that shrink the footprint (2026-10-19)
 
@@ -88,7 +146,8 @@ from `nm`, not grep.
   (`LPS=spx`), PaPILO (`PAPILO=OFF`). The fork patches 24 CppAD files and
   `lpi_clp.cpp`; none of that belongs upstream.
 - **`tpi_openmp.c:586`** does `printf("err1")` then returns `SCIP_ERROR`; it
-  should be `SCIPerrorMessage`, a fix they can accept on its merits.
+  should be `SCIPerrorMessage`, a fix they can accept on its merits. It goes
+  into the functionality PR, not #235.
 - **Real handler-less sites**: `dijkstra.c` `abort()`s (lines 51–71),
   `xmlparse.c` `fprintf(stderr, …)` (lines 125–160) and `abort()` (752), plus
   nauty/dejavu only where the inventory shows them.
@@ -127,8 +186,8 @@ let the upstream documentation suggest `longjmp` is supported.
 
 | PR | Repo / base | Content |
 |----|-------------|---------|
-| Portability | scipopt/scip, `v101-bugfix` | `strerror_r`, `(void)` prototypes, `<cstdlib>`. Nothing vendored. |
-| Functionality | scipopt/scip | One PR, scoped by the `nm` inventory: the CMake option; `message_default.c` left out under the flag; sentinel tokens in `message.c`; existing SCIP message routines where reachable; new macros in `pub_misc.h` only for handler-less code (`dijkstra`, `xmlparse.c`, vendored nauty/dejavu only where unavoidable); CI job that builds with the flag and runs the `nm` check; CHANGELOG entry; SCIP code style. |
+| Portability | scipopt/scip, `v101-bugfix` | `strerror_r`, `(void)` prototypes, `<cstdlib>`. Nothing vendored. **Opened 2026-10-19 as #235.** |
+| Functionality | scipopt/scip (base presumably `master`) | One PR, scoped by the `nm` inventory (table above), including `printf("err1")` → `SCIPerrorMessage`: the CMake option; `message_default.c` left out under the flag; sentinel tokens in `message.c`; existing SCIP message routines where reachable; new macros in `pub_misc.h` only for handler-less code (`dijkstra`, `xmlparse.c`, vendored nauty/dejavu only where unavoidable); CI job that builds with the flag and runs the `nm` check; CHANGELOG entry; SCIP code style. |
 | SoPlex | scipopt/soplex, separate issue first | `SPX_MSG_ERROR` and `SPxOut` default streams supply the stream so call sites stop naming `std::cerr`/`std::cout`; `<istream>` (`basevectors.h`, `mpsinput.cpp`). The only layer with no downstream workaround (C++ streams are not macro-reachable). |
 
 Stays as R-only patches: the CppAD pragma comment-outs and `%zu` fixes (CppAD
